@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>TypeHero — Herói da Digitação</title>
+<style>
+/* ========== BASE ========== */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#07070f;color:#e5e7eb;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+#estrelas{position:fixed;inset:0;z-index:0}
+#vinheta{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 52%,rgba(0,0,0,.6) 100%)}
+#palco{position:absolute;left:50%;top:50%;width:960px;height:1000px;transform-origin:center center;z-index:2}
+.tela{position:absolute;inset:0;display:none;flex-direction:column;align-items:center}
+.tela.ativa{display:flex}
+.titulo{font-family:Impact,'Arial Black',system-ui,sans-serif;font-size:92px;letter-spacing:8px;text-transform:uppercase;color:#fff;text-shadow:0 0 12px #06b6d4,0 0 34px #06b6d4,0 0 60px #0e7490;margin-top:70px}
+.titulo span{color:#ec4899;text-shadow:0 0 12px #ec4899,0 0 34px #ec4899,0 0 60px #9d174d}
+.subtitulo{font-family:Impact,'Arial Black',system-ui,sans-serif;font-size:26px;letter-spacing:10px;text-transform:uppercase;color:#94a3b8;margin:4px 0 34px}
+/* ========== BOTÕES ========== */
+.btn{display:block;width:340px;margin:7px auto;padding:13px 22px;background:#0d0d1f;border:2px solid #06b6d4;color:#67e8f9;font-family:Impact,'Arial Black',system-ui,sans-serif;font-size:19px;letter-spacing:3px;text-transform:uppercase;border-radius:10px;cursor:pointer;transition:all .15s}
+.btn:hover,.btn.sel{background:#06b6d4;color:#04121a;box-shadow:0 0 18px #06b6d4}
+.btn-mini{width:44px;height:38px;background:#0d0d1f;border:2px solid #475569;color:#cbd5e1;border-radius:8px;cursor:pointer;font:700 15px system-ui}
+.btn-mini:hover{border-color:#06b6d4;color:#67e8f9}
+.btn-mini.mudo{border-color:#ef4444;color:#f87171}
+/* ========== MENU ========== */
+#lista-niveis{display:flex;flex-direction:column;gap:9px;width:640px}
+.cartao-nivel{display:flex;align-items:center;gap:14px;width:100%;padding:10px 16px;background:#0c0c1c;border:2px solid #1e293b;border-radius:12px;color:#e5e7eb;cursor:pointer;text-align:left;transition:all .15s}
+.cartao-nivel:hover:not(.bloqueado),.cartao-nivel.sel:not(.bloqueado){border-color:#06b6d4;box-shadow:0 0 14px rgba(6,182,212,.5);transform:translateX(6px)}
+.cartao-nivel .num{font-family:Impact,'Arial Black',system-ui;font-size:30px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#131327;color:#67e8f9;border:1px solid #164e63;flex:none}
+.cartao-nivel .info{flex:1;display:flex;flex-direction:column}
+.cartao-nivel .nome{font-family:Impact,'Arial Black',system-ui;font-size:20px;letter-spacing:2px;text-transform:uppercase}
+.cartao-nivel .desc{font-size:12px;color:#94a3b8}
+.cartao-nivel .melhor{font-size:13px;color:#fbbf24;text-align:right;min-width:110px}
+.cartao-nivel.bloqueado{opacity:.45;cursor:not-allowed}
+.cartao-nivel.bloqueado .melhor{color:#64748b}
+.menu-botoes{margin-top:22px}
+.dica-menu{margin-top:20px;font-size:12px;color:#475569;letter-spacing:1px}
+/* ========== COMO JOGAR ========== */
+.painel-como{width:700px;margin-top:60px;background:#0c0c1c;border:2px solid #1e293b;border-radius:14px;padding:26px 32px}
+.painel-como h2{font-family:Impact,'Arial Black',system-ui;letter-spacing:4px;color:#67e8f9;margin-bottom:14px;text-transform:uppercase}
+.painel-como p{font-size:14px;line-height:1.6;color:#cbd5e1;margin-bottom:10px}
+.painel-como b{color:#fbbf24}
+.leg-mini{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.leg-mini span{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--c);color:var(--c)}
+/* ========== HUD ========== */
+#hud{width:940px;display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;background:rgba(12,12,28,.85);border:1px solid #1e293b;border-radius:12px}
+.hud-item{display:flex;flex-direction:column;align-items:center;min-width:96px}
+.hud-label{font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase}
+.hud-item span:last-child{font-family:Impact,'Arial Black',system-ui;font-size:22px;letter-spacing:1px}
+#hud-pontos{color:#fff}
+#hud-combo{color:#67e8f9}
+#hud-combo.chama{color:#fb923c;text-shadow:0 0 8px #f97316,0 0 20px #ef4444;animation:chama .35s infinite alternate}
+@keyframes chama{from{transform:scale(1)}to{transform:scale(1.18)}}
+#hud-prec{color:#a3e635}
+.hud-energia{flex:1;max-width:190px}
+#barra-energia{width:100%;height:14px;background:#1e293b;border-radius:8px;overflow:hidden;border:1px solid #334155;margin-top:3px}
+#energia-fill{height:100%;width:50%;border-radius:8px;transition:width .2s}
+#energia-fill.e-verde{background:linear-gradient(90deg,#16a34a,#4ade80);box-shadow:0 0 10px #22c55e}
+#energia-fill.e-amarela{background:linear-gradient(90deg,#ca8a04,#facc15);box-shadow:0 0 10px #eab308}
+#energia-fill.e-vermelha{background:linear-gradient(90deg,#b91c1c,#f87171);box-shadow:0 0 10px #ef4444}
+.hud-nivel{flex:1;max-width:210px}
+#hud-nivel-nome{font-size:12px;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;white-space:nowrap}
+#barra-prog{width:100%;height:8px;background:#1e293b;border-radius:6px;overflow:hidden;margin-top:5px;border:1px solid #334155}
+#prog-fill{height:100%;width:0%;background:linear-gradient(90deg,#0e7490,#22d3ee);transition:width .3s}
+.hud-botoes{display:flex;gap:6px}
+/* ========== RODOVIA ========== */
+#rodovia{position:relative;width:664px;height:560px;margin-top:8px}
+#pistas-fundo{position:absolute;inset:0;clip-path:polygon(15% 0,85% 0,100% 100%,0 100%);background:linear-gradient(#0a0a18,#12122b 70%,#171736);border-radius:6px}
+#pistas-fundo .sep{position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(rgba(255,255,255,.02),rgba(255,255,255,.09))}
+#pistas-fundo .glow-pista{position:absolute;top:0;bottom:0;opacity:.16}
+#linha-acerto{position:absolute;left:0;right:0;bottom:64px;height:3px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);box-shadow:0 0 12px rgba(255,255,255,.6);z-index:3}
+#notas{position:absolute;inset:0;z-index:4}
+.nota{position:absolute;left:0;top:0;width:70px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Impact,'Arial Black',system-ui;font-size:27px;color:#fff;border:2px solid var(--c);background:rgba(9,9,22,.92);box-shadow:0 0 14px var(--c),inset 0 0 12px rgba(255,255,255,.07);will-change:transform,opacity}
+.nota.atingida{transition:opacity .12s;opacity:0 !important}
+.palavra{position:absolute;left:0;top:0;height:56px;border-radius:13px;border:2px solid var(--c);display:flex;align-items:center;justify-content:center;gap:3px;padding:0 14px;background:rgba(9,9,22,.93);box-shadow:0 0 14px var(--c);font-family:Impact,'Arial Black',system-ui;font-size:24px;letter-spacing:2px;color:#fff;will-change:transform,opacity;white-space:nowrap}
+.palavra span.feita{color:var(--c);text-shadow:0 0 9px var(--c)}
+#popups{position:absolute;inset:0;pointer-events:none;z-index:7}
+.popup{position:absolute;transform:translate(-50%,-50%);font-family:Impact,'Arial Black',system-ui;font-size:23px;letter-spacing:3px;animation:subir .72s ease-out forwards;white-space:nowrap}
+.popup.p-perfeito{color:#22d3ee;text-shadow:0 0 12px #22d3ee}
+.popup.p-bom{color:#facc15;text-shadow:0 0 10px #eab308}
+.popup.p-errou{color:#f87171;text-shadow:0 0 12px #ef4444}
+@keyframes subir{0%{opacity:1;transform:translate(-50%,-50%) scale(.7)}25%{transform:translate(-50%,-80%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-170%) scale(1)}}
+#fx{position:absolute;inset:0;z-index:6;pointer-events:none}
+#keycaps{position:absolute;bottom:2px;left:0;width:100%;display:flex;z-index:5}
+.kc{flex:1;margin:0 4px;height:56px;border:2px solid var(--c);border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:Impact,'Arial Black',system-ui;font-size:23px;color:var(--c);background:rgba(0,0,0,.55);box-shadow:0 0 9px var(--c);transition:transform .08s}
+.kc.flash{transform:scale(1.14);background:var(--c);color:#05050f}
+/* ========== TECLADO VIRTUAL ========== */
+#teclado-virtual{margin-top:12px;padding:12px 16px;background:rgba(12,12,28,.85);border:1px solid #1e293b;border-radius:14px}
+.fileira{display:flex;gap:6px;justify-content:center;margin-top:6px}
+.fileira:first-child{margin-top:0}
+.tk{width:52px;height:50px;border-radius:9px;border:1px solid #334155;background:#101022;color:#cbd5e1;display:flex;align-items:center;justify-content:center;font:700 17px system-ui;cursor:pointer;transition:background .1s}
+.tk:hover{border-color:#64748b}
+.tk.pulsa{animation:pulsa .45s infinite alternate;border:2px solid var(--c);color:var(--c);box-shadow:0 0 13px var(--c)}
+.tk.ativa{transform:scale(.9);background:var(--c,#334155);color:#05050f}
+@keyframes pulsa{from{transform:scale(1)}to{transform:scale(1.13)}}
+#legenda{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:10px}
+#legenda span{font-size:10px;letter-spacing:1px;padding:2px 8px;border-radius:12px;border:1px solid var(--c);color:var(--c);text-transform:uppercase}
+/* ========== SOBREPOSIÇÕES ========== */
+.sobreposicao{position:absolute;inset:0;background:rgba(4,4,14,.85);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:30}
+.sobreposicao.ativa{display:flex}
+.painel{background:#0c0c1c;border:2px solid #1e293b;border-radius:16px;padding:30px 44px;text-align:center;min-width:430px}
+.painel h2{font-family:Impact,'Arial Black',system-ui;font-size:38px;letter-spacing:5px;text-transform:uppercase;color:#67e8f9;text-shadow:0 0 14px #06b6d4;margin-bottom:16px}
+.painel h2.vermelho{color:#f87171;text-shadow:0 0 14px #ef4444}
+.painel h2.verde{color:#4ade80;text-shadow:0 0 14px #22c55e}
+.stats{margin:8px 0 18px;font-size:16px;line-height:2;color:#cbd5e1}
+.stats b{color:#fbbf24;font-family:Impact,'Arial Black',system-ui;letter-spacing:1px}
+#nota-final{font-family:Impact,'Arial Black',system-ui;font-size:110px;line-height:1;color:#facc15;text-shadow:0 0 20px #eab308,0 0 50px #ca8a04;margin:6px 0}
+#contagem-num{font-family:Impact,'Arial Black',system-ui;font-size:170px;color:#fff;text-shadow:0 0 26px #06b6d4,0 0 70px #06b6d4}
+#contagem-num.zoom{animation:zoom .65s ease-out}
+@keyframes zoom{0%{transform:scale(2.4);opacity:0}35%{opacity:1}100%{transform:scale(1);opacity:1}}
+.novo-recorde{color:#facc15;font-family:Impact,'Arial Black',system-ui;font-size:22px;letter-spacing:3px;text-shadow:0 0 12px #eab308;animation:chama .4s infinite alternate;margin-bottom:8px}
+/* ========== SHAKE / TESTE ========== */
+.tremendo{animation:treme .3s}
+@keyframes treme{0%,100%{transform:translate(-50%,-50%) scale(var(--escala,1))}20%{transform:translate(calc(-50% - 9px),calc(-50% + 5px)) scale(var(--escala,1))}40%{transform:translate(calc(-50% + 8px),calc(-50% - 6px)) scale(var(--escala,1))}60%{transform:translate(calc(-50% - 6px),calc(-50% - 4px)) scale(var(--escala,1))}80%{transform:translate(calc(-50% + 7px),calc(-50% + 6px)) scale(var(--escala,1))}}
+#tela-teste{z-index:60}
+#teste-texto{font-family:ui-monospace,Consolas,monospace;font-size:19px;line-height:1.9;background:#050510;border:3px solid #334155;border-radius:14px;padding:30px 44px;white-space:pre}
+#teste-texto.pass{border-color:#22c55e;color:#4ade80;text-shadow:0 0 8px #22c55e}
+#teste-texto.fail{border-color:#ef4444;color:#f87171;text-shadow:0 0 8px #ef4444}
+</style>
+</head>
+<body>
+<canvas id="estrelas"></canvas>
+<div id="vinheta"></div>
+<div id="palco">
+  <!-- TELA: MENU -->
+  <section id="tela-menu" class="tela ativa">
+    <h1 class="titulo">TYPE<span>HERO</span></h1>
+    <p class="subtitulo">Herói da Digitação</p>
+    <div id="lista-niveis"></div>
+    <div class="menu-botoes">
+      <button id="btn-como" class="btn">Como Jogar</button>
+      <button id="btn-som-menu" class="btn">Som: Ligado</button>
+    </div>
+    <p class="dica-menu">Setas: escolher nível &nbsp;·&nbsp; Enter: confirmar &nbsp;·&nbsp; M: som &nbsp;·&nbsp; Esc: voltar</p>
+  </section>
+
+  <!-- TELA: COMO JOGAR -->
+  <section id="tela-como" class="tela">
+    <div class="painel-como">
+      <h2>Como Jogar</h2>
+      <p>A rodovia tem <b>8 pistas</b>, uma para cada <b>dedo</b> do teclado ABNT2. A posição da pista corresponde à posição do dedo: treine sem olhar para as mãos!</p>
+      <div class="leg-mini" id="leg-como"></div>
+      <p>As notas descem pelas pistas. Pressione a <b>tecla da letra</b> quando a nota cruzar a <b>zona de acerto</b> (os keycaps neon na base). Quanto mais perto da linha, melhor: <b>PERFEITO</b> vale 100 pontos, <b>BOM</b> vale 50.</p>
+      <p>Acertos seguidos sobem o <b>COMBO</b> e o multiplicador (até ×4). Deixar uma nota passar zera o combo e drena <b>ENERGIA</b>. Se a energia chegar a zero, é <b>Game Over</b>.</p>
+      <p>Atalhos: <b>Esc</b> pausa, <b>M</b> liga/desliga o som. Você também pode clicar nas teclas do teclado virtual ou tocar na pista.</p>
+      <button id="btn-voltar-como" class="btn">Voltar</button>
+    </div>
+  </section>
+
+  <!-- TELA: JOGO -->
+  <section id="tela-jogo" class="tela">
+    <header id="hud">
+      <div class="hud-item"><span class="hud-label">Pontuação</span><span id="hud-pontos">0</span></div>
+      <div class="hud-item"><span class="hud-label">Combo</span><span id="hud-combo">0 ×1</span></div>
+      <div class="hud-item"><span class="hud-label">Precisão</span><span id="hud-prec">100%</span></div>
+      <div class="hud-item hud-energia"><span class="hud-label">Energia</span><div id="barra-energia"><div id="energia-fill" class="e-verde"></div></div></div>
+      <div class="hud-item hud-nivel"><span id="hud-nivel-nome">Nível</span><div id="barra-prog"><div id="prog-fill"></div></div></div>
+      <div class="hud-botoes"><button id="btn-pausa" class="btn-mini" title="Pausa (Esc)">II</button><button id="btn-mute" class="btn-mini" title="Som (M)">M</button></div>
+    </header>
+    <div id="rodovia">
+      <div id="pistas-fundo"></div>
+      <div id="linha-acerto"></div>
+      <div id="notas"></div>
+      <canvas id="fx" width="664" height="560"></canvas>
+      <div id="popups"></div>
+      <div id="keycaps"></div>
+    </div>
+    <div id="teclado-virtual">
+      <div class="fileira" id="fk0"></div>
+      <div class="fileira" id="fk1"></div>
+      <div class="fileira" id="fk2"></div>
+      <div id="legenda"></div>
+    </div>
+  </section>
+
+  <!-- SOBREPOSIÇÕES -->
+  <div id="tela-contagem" class="sobreposicao"><div id="contagem-num">3</div></div>
+
+  <div id="tela-pausa" class="sobreposicao">
+    <div class="painel">
+      <h2>Pausa</h2>
+      <button id="btn-continuar" class="btn op-pausa">Continuar</button>
+      <button id="btn-reiniciar" class="btn op-pausa">Reiniciar</button>
+      <button id="btn-menu-pausa" class="btn op-pausa">Menu</button>
+    </div>
+  </div>
+
+  <div id="tela-completo" class="sobreposicao">
+    <div class="painel">
+      <h2 class="verde">Nível Completo!</h2>
+      <div id="nota-final">S</div>
+      <div id="stats-completo" class="stats"></div>
+      <button id="btn-proximo" class="btn">Próximo Nível</button>
+      <button id="btn-repetir" class="btn">Repetir</button>
+      <button id="btn-menu-completo" class="btn">Menu</button>
+    </div>
+  </div>
+
+  <div id="tela-gameover" class="sobreposicao">
+    <div class="painel">
+      <h2 class="vermelho">Game Over</h2>
+      <div id="recorde-lenda" class="novo-recorde" style="display:none">Novo recorde do Modo Lenda!</div>
+      <div id="stats-gameover" class="stats"></div>
+      <button id="btn-tentar" class="btn">Tentar Novamente</button>
+      <button id="btn-menu-gameover" class="btn">Menu</button>
+    </div>
+  </div>
+
+  <div id="tela-teste" class="sobreposicao"><pre id="teste-texto">executando autoteste...</pre></div>
+</div>
+<script>
+'use strict';
+/* ==================================================================
+   TYPEHERO — Herói da Digitação
+   Jogo de digitação estilo Guitar Hero (ABNT2 / PT-BR)
+   Seções: CONFIG / PERSISTÊNCIA / ÁUDIO / CHART / ESTADO /
+           TELAS / RENDER / INPUT / FLUXO / AUTO-TESTE
+   ================================================================== */
+
+/* ==================== CONFIG ==================== */
+const TESTE = new URLSearchParams(location.search).get('test') === '1';
+
+const LANES = [
+  {teclas:['q','a','z'],          cor:'#22c55e', dedo:'Mindinho esq.'},
+  {teclas:['w','s','x'],          cor:'#ef4444', dedo:'Anelar esq.'},
+  {teclas:['e','d','c'],          cor:'#eab308', dedo:'Médio esq.'},
+  {teclas:['r','f','v','t','g','b'], cor:'#f97316', dedo:'Indicador esq.'},
+  {teclas:['y','h','n','u','j','m'], cor:'#06b6d4', dedo:'Indicador dir.'},
+  {teclas:['i','k',','],          cor:'#a855f7', dedo:'Médio dir.'},
+  {teclas:['o','l','.'],          cor:'#ec4899', dedo:'Anelar dir.'},
+  {teclas:['p','ç',';'],          cor:'#84cc16', dedo:'Mindinho dir.'}
+];
+const TECLA_PISTA = {};
+LANES.forEach((l, i) => l.teclas.forEach(t => { TECLA_PISTA[t] = i; }));
+
+const LARG_PISTA = 83;            // 664px / 8 pistas
+const ALT_RODOVIA = 560;
+const Y_ACERTO = 496;             // linha de acerto (centro dos keycaps)
+const CENTRO_X = 332;             // centro horizontal da rodovia
+const JANELA_PERFEITO = 55, JANELA_BOM = 110, LIMITE_ERRO = 130;
+
+const NIVEIS = [
+  {nome:'Base do Ritmo',        bpm:90,  vel:250, total:45, durAlvo:62, desc:'Só a fileira central: A S D F J K L Ç'},
+  {nome:'Subindo a Escala',     bpm:100, vel:290, total:55, durAlvo:66, desc:'Central + fileira superior (Q W E R T Y U I O P)'},
+  {nome:'Explorando o Teclado', bpm:110, vel:330, total:65, durAlvo:70, desc:'Alfabeto completo: as 3 fileiras'},
+  {nome:'Palavras de Estrelas', bpm:100, vel:150, palavras:18, desc:'Digite palavras inteiras antes da linha'},
+  {nome:'Modo Lenda',           bpm:120, vel:330, infinito:true, desc:'Sem fim: velocidade e densidade aumentam'}
+];
+const TECLAS_NIVEL = [
+  'asdfjklç',
+  'asdfjklçqwertyuiop',
+  'asdfjklçqwertyuiopzxcvbnm,.;'
+];
+
+const PALAVRAS = ['amor','casa','vida','tempo','mundo','festa','verde','azul','bravo','calma',
+'doce','forte','gente','heroi','jogo','livro','musica','noite','ouro','praia','vento','terra',
+'sonho','riso','porta','nuvem','linha','folha','fruta','gato','bola','copo','mesa','cama',
+'sapato','janela','escola','amigo','branco','preto','verao','inverno','outono','rio','lago',
+'pedra','areia','campo','cidade','estrada','caminho','trilha','estrela','planeta','cometa',
+'foguete','navio','barco','trem','carro','moto','corrida','vitoria','derrota','coragem',
+'força','dança','abraço','cabeça','laço','sorriso','carinho','saudade','amizade','honra',
+'gloria','poder','magia','bruxa','fada','dragao','castelo','jardim','semente','trigo','milho',
+'arroz','feijao','batata','tomate','cenoura','morango','banana','laranja','abacaxi','uva','pera',
+'sol','lua','mar','paz','luz','rua','flor'];
+
+const CADEADO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 1 1 6 0v3H9z"/></svg>';
+
+/* ==================== PERSISTÊNCIA ==================== */
+const SAVE_KEY = 'typehero_save_v1';
+let save = {desbloqueado:1, melhores:{}, lenda:0};
+try {
+  const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+  if (s && typeof s === 'object') save = Object.assign(save, s);
+} catch (e) { /* armazenamento indisponível */ }
+function salvar() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+
+let mudo = false;
+try { mudo = localStorage.getItem('typehero_mute') === '1'; } catch (e) {}
+function setMudo(v) {
+  mudo = v;
+  try { localStorage.setItem('typehero_mute', v ? '1' : '0'); } catch (e) {}
+  atualizarBotoesMudo();
+}
+
+/* ==================== ÁUDIO (Web Audio API, 100% sintetizado) ==================== */
+let AC = null, master = null, ruidoBuf = null;
+function audioInit() {
+  if (TESTE) return; // autoteste roda sem áudio
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      master = AC.createGain();
+      master.gain.value = 0.5;
+      master.connect(AC.destination);
+      ruidoBuf = AC.createBuffer(1, AC.sampleRate * 0.1, AC.sampleRate);
+      const d = ruidoBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    } catch (e) { AC = null; }
+  }
+  if (AC && AC.state === 'suspended' && G.estado !== 'pause') AC.resume();
+}
+function tom(freq, dur, tipo, vol, quando, slidePara) {
+  if (!AC || mudo) return;
+  const t0 = quando !== undefined ? quando : AC.currentTime;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = tipo || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  if (slidePara) o.frequency.exponentialRampToValueAtTime(Math.max(20, slidePara), t0 + dur);
+  g.gain.setValueAtTime(vol || 0.2, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(master);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function ruido(dur, vol, quando, corte) {
+  if (!AC || mudo) return;
+  const t0 = quando !== undefined ? quando : AC.currentTime;
+  const src = AC.createBufferSource(); src.buffer = ruidoBuf;
+  const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = corte || 5000;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(f); f.connect(g); g.connect(master);
+  src.start(t0); src.stop(t0 + dur + 0.02);
+}
+// SFX
+function sfxAcerto() {           // pitch sobe a cada 10 de combo
+  const f = 500 + Math.min(4, Math.floor(G.combo / 10)) * 110;
+  tom(f, 0.09, 'square', 0.16); tom(f * 2, 0.07, 'sine', 0.1);
+}
+function sfxErro()    { tom(130, 0.28, 'sawtooth', 0.22, undefined, 60); }
+function sfxErrada()  { tom(190, 0.05, 'square', 0.14); }
+function sfxBeep(i)   { tom(i === 3 ? 880 : 440, i === 3 ? 0.3 : 0.14, 'sine', 0.25); }
+function sfxCompleto(){ [523, 659, 784, 1047].forEach((f, i) => tom(f, 0.22, 'triangle', 0.2, AC ? AC.currentTime + i * 0.13 : 0)); }
+function sfxGameOver(){ tom(420, 0.85, 'sawtooth', 0.2, undefined, 55); }
+function sfxUI()      { tom(720, 0.05, 'sine', 0.12); }
+// Beat de fundo (kick + hi-hat) na grade de colcheias do BPM
+const beat = {ativo:false, passo:0, inicioCtx:0};
+function iniciarBeat() {
+  if (!AC || TESTE) return;
+  beat.ativo = true; beat.passo = 0; beat.inicioCtx = AC.currentTime + 0.05;
+}
+function pararBeat() { beat.ativo = false; }
+function agendarBeat() {
+  if (!beat.ativo || !AC || !G.cfg) return;
+  const passoDur = 60 / G.cfg.bpm / 2; // colcheia
+  const horizonte = AC.currentTime + 0.12;
+  if (mudo) { // avança o relógio sem tocar, para não explodir ao desmutar
+    beat.passo = Math.max(beat.passo, Math.floor((horizonte - beat.inicioCtx) / passoDur));
+    return;
+  }
+  while (beat.inicioCtx + beat.passo * passoDur < horizonte) {
+    const t = beat.inicioCtx + beat.passo * passoDur;
+    if (beat.passo % 2 === 0) tom(150, 0.16, 'sine', 0.32, t, 42);   // kick: senoide com decay
+    else ruido(0.03, 0.07, t, 6000);                                  // hi-hat: ruído filtrado
+    beat.passo++;
+  }
+}
+setInterval(agendarBeat, 30);
+
+/* ==================== CHART (geração de notas) ==================== */
+// Gera um chart com padrões rítmicos: subdivisões de 1/4 e 1/8 do BPM,
+// alternância esquerda/direita e intervalo mínimo por pista.
+function gerarChart(nv) {
+  const cfg = NIVEIS[nv];
+  const permitidas = new Set(TECLAS_NIVEL[Math.min(nv, 2)].split(''));
+  const passo = 60 / cfg.bpm / 2; // colcheia em segundos
+  const media = (cfg.durAlvo - 3) / cfg.total;
+  const u = Math.max(2, Math.round(media / passo)); // unidades de colcheia entre notas
+  const padrao = [u, u, Math.max(2, u - 2), u, u, u, Math.max(2, u - 2), u + 2, u];
+  const notas = [];
+  const ult = new Array(8).fill(-99);
+  const minGap = 75 / cfg.vel; // nunca duas notas sobrepostas na mesma pista
+  const pistas = [];
+  for (let i = 0; i < 8; i++)
+    if (LANES[i].teclas.some(k => permitidas.has(k))) pistas.push(i);
+  let t = 2.5, pi = 0, lado = 0;
+  while (notas.length < cfg.total) {
+    if (Math.random() < 0.92) {
+      const mesmoLado = pistas.filter(p => (p < 4) === (lado === 0) && t - ult[p] >= minGap);
+      const cand = mesmoLado.length ? mesmoLado : pistas.filter(p => t - ult[p] >= minGap);
+      if (cand.length) {
+        const p = cand[(Math.random() * cand.length) | 0];
+        const ks = LANES[p].teclas.filter(k => permitidas.has(k));
+        notas.push({t, p, tecla: ks[(Math.random() * ks.length) | 0]});
+        ult[p] = t; lado = 1 - lado;
+        t += padrao[pi % padrao.length] * passo; pi++;
+        continue;
+      }
+    }
+    t += passo;
+  }
+  return notas;
+}
+function gerarChartPalavras() {
+  const embaralhado = PALAVRAS.slice();
+  for (let i = embaralhado.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [embaralhado[i], embaralhado[j]] = [embaralhado[j], embaralhado[i]];
+  }
+  const notas = [];
+  let t = 2.5, prev = -1;
+  for (const w of embaralhado.slice(0, NIVEIS[3].palavras)) {
+    let p; do { p = (Math.random() * 8) | 0; } while (p === prev);
+    prev = p;
+    notas.push({t, p, palavra: w});
+    t += Math.max(3.4, w.length * 0.65 + 1.6);
+  }
+  return notas;
+}
+
+/* ==================== ESTADO ==================== */
+const G = {
+  estado:'menu', nivelIdx:0, cfg:null,
+  chart:[], chartIdx:0, ativas:[],
+  inicioStamp:0, pausadoEm:0,
+  pontos:0, combo:0, comboMax:0, energia:50,
+  perf:0, bons:0, erros:0, processadas:0, totalNotas:0,
+  proxLenda:0, ultLenda:new Array(8).fill(-99), ladoLenda:0
+};
+function agora() { return (performance.now() - G.inicioStamp) / 1000; }
+function mult() { return G.combo >= 30 ? 4 : G.combo >= 20 ? 3 : G.combo >= 10 ? 2 : 1; }
+function precisao() {
+  const total = G.nivelIdx === 4 ? Math.max(1, G.processadas) : Math.max(1, G.totalNotas);
+  return (G.perf + G.bons * 0.5) / total * 100;
+}
+
+/* ==================== TELAS ==================== */
+const $ = id => document.getElementById(id);
+const palco = $('palco');
+let menuSel = 0, pausaSel = 0;
+
+function mostrarTela(nome) {
+  document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
+  if (nome) $('tela-' + nome).classList.add('ativa');
+}
+function mostrarOverlay(id) {
+  document.querySelectorAll('.sobreposicao').forEach(o => o.classList.remove('ativa'));
+  if (id) $(id).classList.add('ativa');
+}
+function esconderOverlays() { mostrarOverlay(null); }
+
+function renderMenu() {
+  const lista = $('lista-niveis');
+  lista.innerHTML = '';
+  NIVEIS.forEach((nv, i) => {
+    const bloq = i + 1 > save.desbloqueado;
+    const melhor = save.melhores[i + 1];
+    const b = document.createElement('button');
+    b.className = 'cartao-nivel' + (bloq ? ' bloqueado' : '') + (i === menuSel ? ' sel' : '');
+    let melhorTxt;
+    if (bloq) melhorTxt = CADEADO_SVG;
+    else if (i === 4 && save.lenda > 0) melhorTxt = 'Recorde: ' + save.lenda;
+    else if (melhor) melhorTxt = melhor.pts + ' pts · ' + melhor.acc.toFixed(0) + '%';
+    else melhorTxt = '—';
+    b.innerHTML = '<span class="num">' + (i + 1) + '</span>' +
+      '<span class="info"><span class="nome">' + nv.nome + '</span>' +
+      '<span class="desc">' + nv.desc + '</span></span>' +
+      '<span class="melhor">' + melhorTxt + '</span>';
+    b.addEventListener('click', () => {
+      if (bloq) { sfxErrada(); return; }
+      menuSel = i; audioInit(); sfxUI(); iniciarNivel(i);
+    });
+    lista.appendChild(b);
+  });
+}
+function atualizarBotoesMudo() {
+  $('btn-som-menu').textContent = 'Som: ' + (mudo ? 'Desligado' : 'Ligado');
+  $('btn-mute').classList.toggle('mudo', mudo);
+}
+
+/* ==================== FLUXO ==================== */
+let timerContagem = null;
+
+function iniciarNivel(i) {
+  G.nivelIdx = i; G.cfg = NIVEIS[i];
+  G.pontos = 0; G.combo = 0; G.comboMax = 0; G.energia = 50;
+  G.perf = 0; G.bons = 0; G.erros = 0; G.processadas = 0;
+  G.chartIdx = 0; G.ativas = [];
+  G.ultLenda = new Array(8).fill(-99); G.ladoLenda = 0; G.proxLenda = 2.5;
+  $('notas').innerHTML = ''; $('popups').innerHTML = '';
+  poolNotas.length = 0;
+  if (i === 3) { G.chart = gerarChartPalavras(); G.totalNotas = G.chart.length; }
+  else if (i === 4) { G.chart = []; G.totalNotas = Infinity; }
+  else { G.chart = gerarChart(i); G.totalNotas = G.chart.length; }
+  mostrarTela('jogo');
+  $('hud-nivel-nome').textContent = 'Nível ' + (i + 1) + ' — ' + G.cfg.nome;
+  atualizarHUD();
+  G.estado = 'contagem';
+  rodarContagem(comecarJogo);
+}
+function rodarContagem(cb) {
+  if (TESTE) { esconderOverlays(); cb(); return; } // autoteste pula a contagem
+  mostrarOverlay('tela-contagem');
+  const seq = ['3', '2', '1', 'VAI!'];
+  let i = 0;
+  const el = $('contagem-num');
+  (function passo() {
+    if (G.estado !== 'contagem') return; // cancelado (Esc)
+    if (i < seq.length) {
+      el.textContent = seq[i];
+      el.classList.remove('zoom'); void el.offsetWidth; el.classList.add('zoom');
+      sfxBeep(i); i++;
+      timerContagem = setTimeout(passo, 700);
+    } else { esconderOverlays(); cb(); }
+  })();
+}
+function comecarJogo() {
+  G.estado = 'game';
+  G.inicioStamp = performance.now();
+  iniciarBeat();
+}
+function pausar() {
+  if (G.estado !== 'game') return;
+  G.estado = 'pause'; G.pausadoEm = performance.now();
+  pausaSel = 0; destacarPausa();
+  mostrarOverlay('tela-pausa');
+  if (AC) AC.suspend();
+}
+function retomar() {
+  if (G.estado !== 'pause') return;
+  esconderOverlays();
+  G.inicioStamp += performance.now() - G.pausadoEm;
+  G.estado = 'game';
+  if (AC) AC.resume();
+  sfxUI();
+}
+function limparAtivas() {
+  for (const n of G.ativas) if (n.el && n.el.parentNode) n.el.parentNode.removeChild(n.el);
+  G.ativas = [];
+}
+function voltarMenu() {
+  pararBeat(); limparAtivas();
+  clearTimeout(timerContagem);
+  G.estado = 'menu'; menuSel = 0;
+  esconderOverlays(); mostrarTela('menu'); renderMenu();
+}
+function fimDeNivel() {
+  pararBeat(); limparAtivas();
+  G.estado = 'complete';
+  const acc = precisao();
+  const notaFinal = acc >= 95 ? 'S' : acc >= 85 ? 'A' : acc >= 70 ? 'B' : 'C';
+  const passou = acc >= 70 && G.energia > 0;
+  const nv = G.nivelIdx + 1;
+  if (passou && nv + 1 > save.desbloqueado && nv < 5) save.desbloqueado = nv + 1;
+  const ant = save.melhores[nv];
+  if (passou && (!ant || G.pontos > ant.pts)) save.melhores[nv] = {pts: G.pontos, acc};
+  salvar();
+  sfxCompleto();
+  $('nota-final').textContent = notaFinal;
+  $('nota-final').style.color = notaFinal === 'S' ? '#facc15' : notaFinal === 'A' ? '#4ade80' : notaFinal === 'B' ? '#67e8f9' : '#94a3b8';
+  $('stats-completo').innerHTML =
+    'Pontuação: <b>' + G.pontos + '</b><br>' +
+    'Precisão: <b>' + acc.toFixed(1) + '%</b><br>' +
+    'Combo máximo: <b>' + G.comboMax + '</b>' +
+    (passou ? '' : '<br><span style="color:#f87171">Precisão mínima de 70% para desbloquear</span>');
+  $('btn-proximo').style.display = (passou && G.nivelIdx < 4) ? 'block' : 'none';
+  mostrarOverlay('tela-completo');
+}
+function gameOver() {
+  pararBeat();
+  G.estado = 'gameover';
+  sfxErro(); sfxGameOver();
+  const acc = precisao();
+  let recorde = false;
+  if (G.nivelIdx === 4 && G.pontos > save.lenda) {
+    save.lenda = G.pontos; salvar(); recorde = true;
+  }
+  $('recorde-lenda').style.display = recorde ? 'block' : 'none';
+  $('stats-gameover').innerHTML =
+    'Nível: <b>' + G.cfg.nome + '</b><br>' +
+    'Pontuação: <b>' + G.pontos + '</b><br>' +
+    'Precisão: <b>' + acc.toFixed(1) + '%</b><br>' +
+    'Combo máximo: <b>' + G.comboMax + '</b><br>' +
+    'Notas processadas: <b>' + G.processadas + '</b>';
+  mostrarOverlay('tela-gameover');
+  limparAtivas();
+}
+function destacarPausa() {
+  document.querySelectorAll('.op-pausa').forEach((b, i) => b.classList.toggle('sel', i === pausaSel));
+}
+function checkMorte() {
+  if (G.energia <= 0 && G.estado === 'game') { G.energia = 0; atualizarHUD(); gameOver(); }
+}
+
+/* ==================== RENDER ==================== */
+// Starfield parallax de fundo (canvas leve, 3 profundidades)
+const cvEst = $('estrelas'), ctxEst = cvEst.getContext('2d');
+let estrelas = [];
+function initEstrelas() {
+  cvEst.width = innerWidth; cvEst.height = innerHeight;
+  estrelas = [];
+  for (let i = 0; i < 130; i++) {
+    const z = 0.25 + Math.random() * 0.75;
+    estrelas.push({x: Math.random() * cvEst.width, y: Math.random() * cvEst.height, z,
+      r: z * 1.7, tom: Math.random() < 0.15 ? (Math.random() < 0.5 ? '#67e8f9' : '#f9a8d4') : '#ffffff'});
+  }
+}
+function desenharEstrelas(dt) {
+  ctxEst.clearRect(0, 0, cvEst.width, cvEst.height);
+  for (const s of estrelas) {
+    s.y += s.z * 26 * dt;
+    if (s.y > cvEst.height + 2) { s.y = -2; s.x = Math.random() * cvEst.width; }
+    ctxEst.globalAlpha = 0.25 + s.z * 0.55;
+    ctxEst.fillStyle = s.tom;
+    ctxEst.fillRect(s.x, s.y, s.r, s.r);
+  }
+  ctxEst.globalAlpha = 1;
+}
+
+// Partículas (canvas overlay, máx. 60)
+const fxC = $('fx'), fxX = fxC.getContext('2d');
+let parts = [];
+function explosao(x, y, cor) {
+  for (let i = 0; i < 10 && parts.length < 60; i++) {
+    parts.push({x, y, vx: (Math.random() - 0.5) * 280, vy: -Math.random() * 240 - 40, vida: 0.5, cor});
+  }
+}
+function atualizarParticulas(dt) {
+  fxX.clearRect(0, 0, fxC.width, fxC.height);
+  if (!parts.length) return;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.vida -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 520 * dt;
+    if (p.vida <= 0) { parts.splice(i, 1); continue; }
+    fxX.globalAlpha = p.vida / 0.5;
+    fxX.fillStyle = p.cor;
+    fxX.fillRect(p.x - 2.5, p.y - 2.5, 5, 5);
+  }
+  fxX.globalAlpha = 1;
+}
+
+// Popups de julgamento
+function popup(texto, pista, classe) {
+  const d = document.createElement('div');
+  d.className = 'popup ' + classe;
+  d.textContent = texto;
+  d.style.left = (pista * LARG_PISTA + LARG_PISTA / 2) + 'px';
+  d.style.top = (Y_ACERTO - 34) + 'px';
+  $('popups').appendChild(d);
+  setTimeout(() => d.remove(), 760);
+}
+function tremor() {
+  palco.classList.remove('tremendo'); void palco.offsetWidth;
+  palco.classList.add('tremendo');
+}
+
+// Pool de elementos de nota (DOM com transform/opacity apenas)
+const poolNotas = [];
+function obterElNota() {
+  if (poolNotas.length) return poolNotas.pop();
+  const el = document.createElement('div');
+  el.className = 'nota';
+  return el;
+}
+
+// Spawns
+function tempoViagem(vel) { return (Y_ACERTO + 70) / vel; }
+function criarNota(c) {
+  const n = {pista: c.p, tecla: c.tecla, tHit: c.t, vel: G.cfg.vel, y: -70, w: 70, h: 52, palavra: false, autoT: false};
+  const el = obterElNota();
+  el.className = 'nota';
+  el.textContent = c.tecla.toUpperCase();
+  el.style.setProperty('--c', LANES[c.p].cor);
+  $('notas').appendChild(el);
+  n.el = el;
+  G.ativas.push(n);
+}
+function criarPalavra(c) {
+  const n = {pista: c.p, palavra: true, word: c.palavra, idx: 0, tHit: c.t, vel: G.cfg.vel, y: -70, h: 56, autoT: false};
+  const el = document.createElement('div');
+  el.className = 'palavra';
+  el.style.setProperty('--c', LANES[c.p].cor);
+  for (const ch of c.palavra) {
+    const sp = document.createElement('span');
+    sp.textContent = ch.toUpperCase();
+    el.appendChild(sp);
+  }
+  n.w = c.palavra.length * 24 + 34;
+  $('notas').appendChild(el);
+  n.el = el;
+  G.ativas.push(n);
+}
+function spawnDoChart(t) {
+  const tv = tempoViagem(G.cfg.vel);
+  while (G.chartIdx < G.chart.length && G.chart[G.chartIdx].t - t <= tv) {
+    const c = G.chart[G.chartIdx++];
+    if (c.palavra) criarPalavra(c); else criarNota(c);
+  }
+}
+// Modo Lenda: spawns infinitos com rampa de velocidade e densidade
+function spawnLenda(t) {
+  for (;;) {
+    const vel = 330 + Math.min(190, G.proxLenda * 2.2); // 330 -> 520 px/s
+    if (G.proxLenda - t > tempoViagem(vel)) break;
+    const permitidas = new Set(TECLAS_NIVEL[2].split(''));
+    const minGap = 75 / vel;
+    const pistas = [];
+    for (let i = 0; i < 8; i++)
+      if (G.proxLenda - G.ultLenda[i] >= minGap) pistas.push(i);
+    const mesmoLado = pistas.filter(p => (p < 4) === (G.ladoLenda === 0));
+    const cand = mesmoLado.length ? mesmoLado : pistas;
+    if (cand.length) {
+      const p = cand[(Math.random() * cand.length) | 0];
+      const ks = LANES[p].teclas.filter(k => permitidas.has(k));
+      criarNota({t: G.proxLenda, p, tecla: ks[(Math.random() * ks.length) | 0]});
+      G.ativas[G.ativas.length - 1].vel = vel;
+      G.ultLenda[p] = G.proxLenda;
+      G.ladoLenda = 1 - G.ladoLenda;
+    }
+    const gap = Math.max(0.30, 0.66 - G.proxLenda * 0.0045); // densidade sobe
+    G.proxLenda += gap;
+  }
+}
+
+// Posicionamento com perspectiva simulada (matemática de acerto 2D linear)
+function posicionar(n) {
+  const p = Math.max(0, Math.min(1, n.y / Y_ACERTO));
+  const esc = 0.55 + 0.55 * p;                 // 0.55 -> 1.1
+  const op = 0.4 + 0.6 * p;                    // 0.4 -> 1
+  const cx = n.pista * LARG_PISTA + LARG_PISTA / 2;
+  const x = CENTRO_X + (cx - CENTRO_X) * (0.55 + 0.45 * p); // convergência ao topo
+  n.el.style.transform = 'translate(' + (x - n.w / 2) + 'px,' + (n.y - n.h / 2) + 'px) scale(' + esc.toFixed(3) + ')';
+  n.el.style.opacity = op.toFixed(3);
+}
+function removerNota(n) {
+  const i = G.ativas.indexOf(n);
+  if (i >= 0) G.ativas.splice(i, 1);
+  if (n.el) {
+    n.el.remove();
+    if (!n.palavra && poolNotas.length < 40) poolNotas.push(n.el);
+  }
+}
+
+/* ---------- Julgamento ---------- */
+function acertar(n, tipo) {
+  const m = mult();
+  G.combo++; G.comboMax = Math.max(G.comboMax, G.combo);
+  G.processadas++;
+  const cor = LANES[n.pista].cor;
+  if (tipo === 'perfeito') {
+    G.pontos += 100 * m; G.perf++;
+    G.energia = Math.min(100, G.energia + 3);
+    popup('PERFEITO', n.pista, 'p-perfeito');
+    explosao(n.pista * LARG_PISTA + LARG_PISTA / 2, Y_ACERTO, cor);
+  } else {
+    G.pontos += 50 * m; G.bons++;
+    G.energia = Math.min(100, G.energia + 1.5);
+    popup('BOM', n.pista, 'p-bom');
+  }
+  sfxAcerto();
+  flashKeycap(n.pista);
+  removerNota(n);
+  atualizarHUD();
+}
+function errar(n) { // nota/palavra passou da linha
+  G.combo = 0; G.erros++; G.processadas++;
+  G.energia -= 8;
+  popup('ERROU', n.pista, 'p-errou');
+  tremor(); sfxErro();
+  removerNota(n);
+  atualizarHUD();
+  checkMorte();
+}
+function teclaErrada() { // tecla de jogo sem nota por perto: não quebra combo
+  G.energia -= 3;
+  sfxErrada();
+  atualizarHUD();
+  checkMorte();
+}
+function teclaJogo(k) {
+  if (G.estado !== 'game') return;
+  if (G.nivelIdx === 3) { teclaPalavra(k); return; }
+  const pista = TECLA_PISTA[k];
+  if (pista === undefined) return;
+  let best = null, bestD = Infinity;
+  for (const n of G.ativas) {
+    if (n.palavra || n.pista !== pista) continue;
+    const d = Math.abs(n.y - Y_ACERTO);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  if (best && bestD <= JANELA_PERFEITO) acertar(best, 'perfeito');
+  else if (best && bestD <= JANELA_BOM) acertar(best, 'bom');
+  else teclaErrada();
+}
+function teclaPalavra(k) {
+  if (!Object.prototype.hasOwnProperty.call(TECLA_PISTA, k)) return;
+  let alvo = null, bestD = Infinity;
+  for (const n of G.ativas) {
+    if (!n.palavra) continue;
+    const d = Math.abs(n.y - Y_ACERTO);
+    if (d < bestD) { bestD = d; alvo = n; }
+  }
+  if (!alvo) { teclaErrada(); return; }
+  if (k === alvo.word[alvo.idx]) {
+    alvo.el.children[alvo.idx].classList.add('feita');
+    alvo.idx++;
+    G.pontos += 10; // +10 por letra
+    sfxAcerto();
+    if (alvo.idx >= alvo.word.length) { // palavra completa
+      const bonus = 100 + 20 * alvo.word.length;
+      G.pontos += bonus;
+      G.combo++; G.comboMax = Math.max(G.comboMax, G.combo);
+      G.perf++; G.processadas++;
+      G.energia = Math.min(100, G.energia + 2);
+      popup('PALAVRA +' + bonus, alvo.pista, 'p-perfeito');
+      explosao(alvo.pista * LARG_PISTA + LARG_PISTA / 2, Y_ACERTO, LANES[alvo.pista].cor);
+      flashKeycap(alvo.pista);
+      removerNota(alvo);
+    }
+    atualizarHUD();
+  } else {
+    G.energia -= 4; // letra errada
+    sfxErrada();
+    atualizarHUD();
+    checkMorte();
+  }
+}
+
+/* ---------- HUD / keycaps / dica ---------- */
+const kcEls = [], kcTxt = new Array(8).fill('');
+function flashKeycap(p) {
+  const el = kcEls[p];
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 140);
+}
+function atualizarHUD() {
+  $('hud-pontos').textContent = G.pontos;
+  const hc = $('hud-combo');
+  hc.textContent = G.combo + ' ×' + mult();
+  hc.classList.toggle('chama', G.combo >= 20);
+  $('hud-prec').textContent = (G.processadas === 0 && G.perf === 0 ? 100 : precisao()).toFixed(0) + '%';
+  const ef = $('energia-fill');
+  ef.style.width = Math.max(0, G.energia) + '%';
+  ef.className = G.energia > 50 ? 'e-verde' : G.energia > 25 ? 'e-amarela' : 'e-vermelha';
+  if (G.nivelIdx === 4) $('prog-fill').style.width = '100%';
+  else $('prog-fill').style.width = Math.min(100, G.processadas / Math.max(1, G.totalNotas) * 100) + '%';
+}
+function atualizarKeycaps() {
+  for (let p = 0; p < 8; p++) {
+    let best = null, bestD = Infinity;
+    for (const n of G.ativas) {
+      if (n.pista !== p) continue;
+      const d = Math.abs(n.y - Y_ACERTO);
+      if (d < bestD) { bestD = d; best = n; }
+    }
+    let txt = LANES[p].teclas[0].toUpperCase();
+    if (best) txt = best.palavra ? best.word[best.idx].toUpperCase() : best.tecla.toUpperCase();
+    if (kcTxt[p] !== txt) { kcTxt[p] = txt; kcEls[p].textContent = txt; }
+  }
+}
+// Dica: tecla do teclado virtual pulsa na cor da pista da nota mais próxima
+let hintAtual = null;
+function atualizarHint() {
+  let best = null, bestD = Infinity;
+  for (const n of G.ativas) {
+    if (n.y > Y_ACERTO + JANELA_BOM) continue;
+    const d = Math.abs(n.y - Y_ACERTO);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  const k = best ? (best.palavra ? best.word[best.idx] : best.tecla) : null;
+  if (k === hintAtual) return;
+  if (hintAtual && tkEls[hintAtual]) tkEls[hintAtual].classList.remove('pulsa');
+  hintAtual = k;
+  if (k && tkEls[k]) tkEls[k].classList.add('pulsa');
+}
+
+/* ---------- Loop principal (rAF + delta-time) ---------- */
+let ultimoTs = 0;
+function quadro(ts) {
+  requestAnimationFrame(quadro);
+  const dt = Math.min(0.05, Math.max(0, (ts - ultimoTs) / 1000 || 0));
+  ultimoTs = ts;
+  desenharEstrelas(dt);
+  if (G.estado === 'game') atualizarJogo();
+  atualizarParticulas(dt);
+}
+function atualizarJogo() {
+  const t = agora();
+  if (G.nivelIdx === 4) spawnLenda(t); else spawnDoChart(t);
+  for (let i = G.ativas.length - 1; i >= 0; i--) {
+    const n = G.ativas[i];
+    n.y = Y_ACERTO - (n.tHit - t) * n.vel; // movimento linear 2D
+    if (n.y > Y_ACERTO + LIMITE_ERRO) { errar(n); continue; }
+    posicionar(n);
+  }
+  atualizarKeycaps();
+  atualizarHint();
+  if (G.nivelIdx < 4 && G.chartIdx >= G.chart.length && G.ativas.length === 0 && G.estado === 'game')
+    fimDeNivel();
+}
+
+/* ==================== CONSTRUÇÃO ESTÁTICA ==================== */
+function construirFundo() {
+  const fundo = $('pistas-fundo');
+  for (let p = 0; p < 8; p++) {
+    const g = document.createElement('div');
+    g.className = 'glow-pista';
+    g.style.left = (p * LARG_PISTA) + 'px';
+    g.style.width = LARG_PISTA + 'px';
+    g.style.background = 'linear-gradient(to top,' + LANES[p].cor + ',transparent 45%)';
+    fundo.appendChild(g);
+    if (p > 0) {
+      const s = document.createElement('div');
+      s.className = 'sep';
+      s.style.left = (p * LARG_PISTA) + 'px';
+      fundo.appendChild(s);
+    }
+  }
+}
+function construirKeycaps() {
+  const box = $('keycaps');
+  for (let p = 0; p < 8; p++) {
+    const el = document.createElement('div');
+    el.className = 'kc';
+    el.style.setProperty('--c', LANES[p].cor);
+    el.textContent = LANES[p].teclas[0].toUpperCase();
+    el.title = LANES[p].dedo;
+    box.appendChild(el);
+    kcEls.push(el);
+  }
+}
+const tkEls = {};
+function construirTeclado() {
+  const fileiras = [
+    ['q','w','e','r','t','y','u','i','o','p'],
+    ['a','s','d','f','g','h','j','k','l','ç'],
+    ['z','x','c','v','b','n','m',',','.',';']
+  ];
+  fileiras.forEach((fk, i) => {
+    const row = $('fk' + i);
+    fk.forEach(k => {
+      const el = document.createElement('div');
+      el.className = 'tk';
+      el.textContent = k.toUpperCase();
+      el.style.setProperty('--c', LANES[TECLA_PISTA[k]].cor);
+      el.addEventListener('pointerdown', ev => {
+        ev.preventDefault(); audioInit();
+        if (G.estado === 'game') { teclaJogo(k); feedbackTecla(k); }
+      });
+      row.appendChild(el);
+      tkEls[k] = el;
+    });
+  });
+}
+function construirLegenda() {
+  const leg = $('legenda'), legComo = $('leg-como');
+  LANES.forEach((l, i) => {
+    const s = document.createElement('span');
+    s.style.setProperty('--c', l.cor);
+    s.textContent = l.dedo;
+    leg.appendChild(s);
+    if (legComo) legComo.appendChild(s.cloneNode(true));
+  });
+}
+function feedbackTecla(k) {
+  const el = tkEls[k];
+  if (!el) return;
+  el.classList.add('ativa');
+  setTimeout(() => el.classList.remove('ativa'), 120);
+}
+
+/* ---------- Responsivo: escala o palco ---------- */
+let escalaPalco = 1;
+function ajustar() {
+  escalaPalco = Math.min(innerWidth / 990, innerHeight / 1030);
+  palco.style.setProperty('--escala', escalaPalco);
+  palco.style.transform = 'translate(-50%,-50%) scale(' + escalaPalco + ')';
+}
+
+/* ==================== INPUT ==================== */
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  audioInit(); // primeiro gesto: cria/retoma o AudioContext
+  // Atalhos globais
+  if (k === 'escape') { tratarEsc(); e.preventDefault(); return; }
+  if (k === 'm' && G.estado !== 'game') { setMudo(!mudo); sfxUI(); return; }
+  // Gameplay
+  if (G.estado === 'game') {
+    if (Object.prototype.hasOwnProperty.call(TECLA_PISTA, k)) {
+      teclaJogo(k); feedbackTecla(k); e.preventDefault();
+    }
+    return;
+  }
+  // Navegação de menus por teclado
+  if (G.estado === 'menu') {
+    const cartoes = document.querySelectorAll('.cartao-nivel');
+    if (k === 'arrowdown' || k === 'arrowup') {
+      menuSel = (menuSel + (k === 'arrowdown' ? 1 : -1) + NIVEIS.length) % NIVEIS.length;
+      cartoes.forEach((c, i) => c.classList.toggle('sel', i === menuSel));
+      sfxUI(); e.preventDefault();
+    } else if (k === 'enter' || k === ' ') {
+      e.preventDefault();
+      if (menuSel + 1 > save.desbloqueado) { sfxErrada(); return; }
+      sfxUI(); iniciarNivel(menuSel);
+    }
+  } else if (G.estado === 'pause') {
+    if (k === 'arrowdown' || k === 'arrowup') {
+      pausaSel = (pausaSel + (k === 'arrowdown' ? 1 : -1) + 3) % 3;
+      destacarPausa(); sfxUI(); e.preventDefault();
+    } else if (k === 'enter' || k === ' ') {
+      e.preventDefault();
+      if (pausaSel === 0) retomar();
+      else if (pausaSel === 1) { iniciarNivel(G.nivelIdx); }
+      else voltarMenu();
+    }
+  } else if (G.estado === 'complete') {
+    if (k === 'enter' || k === ' ') {
+      e.preventDefault();
+      if ($('btn-proximo').style.display !== 'none') iniciarNivel(G.nivelIdx + 1);
+      else iniciarNivel(G.nivelIdx);
+    }
+  } else if (G.estado === 'gameover') {
+    if (k === 'enter' || k === ' ') { e.preventDefault(); iniciarNivel(G.nivelIdx); }
+  } else if (G.estado === 'como') {
+    if (k === 'enter' || k === ' ') { e.preventDefault(); voltarMenu(); }
+  }
+});
+function tratarEsc() {
+  if (G.estado === 'game') pausar();
+  else if (G.estado === 'pause') retomar();
+  else if (G.estado === 'contagem') { clearTimeout(timerContagem); voltarMenu(); }
+  else if (G.estado === 'como' || G.estado === 'complete' || G.estado === 'gameover') voltarMenu();
+}
+// Primeiro gesto também por toque/clique
+window.addEventListener('pointerdown', () => audioInit(), {passive: true});
+// Toque/clique na pista: toca a nota mais próxima daquela pista
+$('rodovia').addEventListener('pointerdown', ev => {
+  if (G.estado !== 'game') return;
+  audioInit();
+  const r = $('rodovia').getBoundingClientRect();
+  const pista = Math.max(0, Math.min(7, Math.floor((ev.clientX - r.left) / (r.width / 8))));
+  let best = null, bestD = Infinity;
+  for (const n of G.ativas) {
+    if (n.palavra || n.pista !== pista) continue;
+    const d = Math.abs(n.y - Y_ACERTO);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  if (best) { teclaJogo(best.tecla); feedbackTecla(best.tecla); }
+  else teclaErrada();
+});
+// Botões de UI
+$('btn-como').addEventListener('click', () => { audioInit(); sfxUI(); G.estado = 'como'; mostrarTela('como'); });
+$('btn-voltar-como').addEventListener('click', () => { sfxUI(); voltarMenu(); });
+$('btn-som-menu').addEventListener('click', () => { audioInit(); setMudo(!mudo); sfxUI(); });
+$('btn-pausa').addEventListener('click', () => { if (G.estado === 'game') pausar(); });
+$('btn-mute').addEventListener('click', () => { setMudo(!mudo); });
+$('btn-continuar').addEventListener('click', retomar);
+$('btn-reiniciar').addEventListener('click', () => iniciarNivel(G.nivelIdx));
+$('btn-menu-pausa').addEventListener('click', voltarMenu);
+$('btn-proximo').addEventListener('click', () => iniciarNivel(G.nivelIdx + 1));
+$('btn-repetir').addEventListener('click', () => iniciarNivel(G.nivelIdx));
+$('btn-menu-completo').addEventListener('click', voltarMenu);
+$('btn-tentar').addEventListener('click', () => iniciarNivel(G.nivelIdx));
+$('btn-menu-gameover').addEventListener('click', voltarMenu);
+window.addEventListener('resize', () => { ajustar(); initEstrelas(); });
+
+/* ==================== AUTO-TESTE (?test=1) ==================== */
+window.__errors = [];
+if (TESTE) {
+  window.onerror = (msg, src, lin, col) => { window.__errors.push(String(msg) + ' @' + lin + ':' + col); };
+  window.addEventListener('unhandledrejection', e => window.__errors.push('rejeicao: ' + String(e.reason)));
+}
+function iniciarTeste() {
+  setTimeout(() => iniciarNivel(0), 400); // inicia nível 1 automaticamente (sem áudio)
+  // Simulador de teclas: acerta ~85% das notas na hora certa; o resto vira ERROU
+  const sim = setInterval(() => {
+    if (G.estado !== 'game') return;
+    for (const n of G.ativas) {
+      if (n.palavra || n.autoT) continue;
+      if (Math.abs(n.y - Y_ACERTO) <= 30) {
+        n.autoT = true;
+        if (Math.random() < 0.85)
+          window.dispatchEvent(new KeyboardEvent('keydown', {key: n.tecla}));
+      }
+    }
+  }, 40);
+  // Algumas teclas erradas de propósito (caminho "tecla errada")
+  let erradas = 0;
+  const simErrada = setInterval(() => {
+    if (G.estado === 'game' && erradas < 3) {
+      erradas++;
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'q'}));
+    }
+  }, 5000);
+  setTimeout(() => {
+    clearInterval(sim); clearInterval(simErrada);
+    const acertos = G.perf + G.bons;
+    const pass = window.__errors.length === 0 && G.pontos > 0 && acertos > 0 && G.processadas > 0;
+    window.__testResult = {
+      pass, errosJS: window.__errors.length, processadas: G.processadas,
+      acertos, erros: G.erros, pontos: G.pontos, energia: G.energia, estado: G.estado
+    };
+    const linhas = [
+      'RESULTADO: ' + (pass ? 'PASS' : 'FAIL'),
+      '',
+      'erros JS capturados..: ' + window.__errors.length,
+      'notas processadas....: ' + G.processadas,
+      'acertos..............: ' + acertos + ' (perfeitos ' + G.perf + ' / bons ' + G.bons + ')',
+      'erros (ERROU)........: ' + G.erros,
+      'pontuacao............: ' + G.pontos,
+      'energia..............: ' + Math.round(G.energia),
+      'estado de telas......: ' + G.estado
+    ];
+    if (window.__errors.length) linhas.push('', window.__errors[0]);
+    const el = $('teste-texto');
+    el.textContent = linhas.join('\n');
+    el.className = pass ? 'pass' : 'fail';
+    mostrarOverlay('tela-teste');
+  }, 20000);
+}
+
+/* ==================== INIT ==================== */
+construirFundo();
+construirKeycaps();
+construirTeclado();
+construirLegenda();
+atualizarBotoesMudo();
+renderMenu();
+initEstrelas();
+ajustar();
+requestAnimationFrame(quadro);
+if (TESTE) iniciarTeste();
+</script>
+</body>
+</html>
