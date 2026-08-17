@@ -7,12 +7,13 @@
 <title>TypeHero — Herói da Digitação</title>
 <style>
 /* ========== BASE ========== */
+:root{--palco-largura:960px;--palco-altura:1000px;--respiro-tela:24px}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
 body{background:#07070f;color:#e5e7eb;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
 #estrelas{position:fixed;inset:0;z-index:0}
 #vinheta{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 52%,rgba(0,0,0,.6) 100%)}
-#palco{position:absolute;left:50%;top:50%;width:960px;height:1000px;transform-origin:center center;z-index:2}
+#palco{position:absolute;left:50%;top:50%;width:var(--palco-largura);height:var(--palco-altura);transform-origin:center center;z-index:2}
 .tela{position:absolute;inset:0;display:none;flex-direction:column;align-items:center}
 .tela.ativa{display:flex}
 .titulo{font-family:Impact,'Arial Black',system-ui,sans-serif;font-size:92px;letter-spacing:8px;text-transform:uppercase;color:#fff;text-shadow:0 0 12px #06b6d4,0 0 34px #06b6d4,0 0 60px #0e7490;margin-top:70px}
@@ -123,6 +124,41 @@ body{background:#07070f;color:#e5e7eb;font-family:system-ui,-apple-system,'Segoe
 #teste-texto{font-family:ui-monospace,Consolas,monospace;font-size:19px;line-height:1.9;background:#050510;border:3px solid #334155;border-radius:14px;padding:30px 44px;white-space:pre}
 #teste-texto.pass{border-color:#22c55e;color:#4ade80;text-shadow:0 0 8px #22c55e}
 #teste-texto.fail{border-color:#ef4444;color:#f87171;text-shadow:0 0 8px #ef4444}
+/* ========== TELAS LARGAS ========== */
+@media (min-aspect-ratio:3/2) {
+  :root{--palco-largura:1440px;--palco-altura:800px}
+
+  #tela-menu .titulo{margin-top:8px}
+  #tela-menu .subtitulo{margin-bottom:14px}
+  #seletor-etapas,#resumo-etapa,#lista-niveis{width:1040px}
+  #seletor-etapas{margin-bottom:8px}
+  #resumo-etapa{margin-bottom:8px}
+  #lista-niveis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));grid-auto-flow:column;gap:8px 12px}
+  .cartao-nivel{padding:8px 14px}
+  .cartao-nivel .num{width:42px;height:42px;font-size:28px}
+  .menu-botoes{display:flex;gap:12px;margin-top:10px}
+  .menu-botoes .btn{width:280px;margin:0}
+  .dica-menu{margin-top:9px}
+
+  .painel-como{width:1040px;margin-top:46px;padding:32px 42px}
+  .painel-como p{font-size:16px;line-height:1.65}
+
+  #tela-jogo.ativa{
+    display:grid;
+    grid-template-columns:664px 620px;
+    grid-template-rows:auto 560px;
+    column-gap:40px;
+    row-gap:14px;
+    align-content:center;
+    justify-content:center;
+    align-items:start;
+  }
+  #hud{grid-column:1/-1;grid-row:1;width:1324px;margin-top:0;justify-self:center;justify-content:center}
+  .hud-energia{max-width:280px}
+  .hud-nivel{max-width:300px}
+  #rodovia{grid-column:1;grid-row:2;margin-top:0}
+  #teclado-virtual{grid-column:2;grid-row:2;width:620px;margin-top:0;padding:18px 20px;align-self:center}
+}
 </style>
 </head>
 <body>
@@ -939,7 +975,14 @@ function feedbackTecla(k) {
 /* ---------- Responsivo: escala o palco ---------- */
 let escalaPalco = 1;
 function ajustar() {
-  escalaPalco = Math.min(innerWidth / 990, innerHeight / 1030);
+  const estilos = getComputedStyle(document.documentElement);
+  const respiro = parseFloat(estilos.getPropertyValue('--respiro-tela')) || 24;
+  const larguraDisponivel = Math.max(1, innerWidth - respiro * 2);
+  const alturaDisponivel = Math.max(1, innerHeight - respiro * 2);
+  escalaPalco = Math.min(
+    larguraDisponivel / palco.offsetWidth,
+    alturaDisponivel / palco.offsetHeight
+  );
   palco.style.setProperty('--escala', escalaPalco);
   palco.style.transform = 'translate(-50%,-50%) scale(' + escalaPalco + ')';
 }
