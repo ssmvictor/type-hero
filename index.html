@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>TypeHero — Herói da Digitação</title>
+<style>
+/* ========== BASE ========== */
+:root{--palco-largura:960px;--palco-altura:1000px;--respiro-tela:24px}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#07070f;color:#e5e7eb;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+#estrelas{position:fixed;inset:0;z-index:0}
+#vinheta{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 52%,rgba(0,0,0,.6) 100%)}
+#palco{position:absolute;left:50%;top:50%;width:var(--palco-largura);height:var(--palco-altura);transform-origin:center center;z-index:2}
+.tela{position:absolute;inset:0;display:none;flex-direction:column;align-items:center}
+.tela.ativa{display:flex}
+.titulo{font-family:Impact,'Arial Black',system-ui,sans-serif;font-size:92px;letter-spacing:8px;text-transform:uppercase;color:#fff;text-shadow:0 0 12px #06b6d4,0 0 34px #06b6d4,0 0 60px #0e7490;margin-top:70px}
+.titulo span{color:#ec4899;text-shadow:0 0 12px #ec4899,0 0 34px #ec4899,0 0 60px #9d174d}
+.subtitulo{font-family:Impact,'Arial Black',system-ui,sans-serif;font-size:26px;letter-spacing:10px;text-transform:uppercase;color:#94a3b8;margin:4px 0 34px}
+/* ========== BOTÕES ========== */
+.btn{display:block;width:340px;margin:7px auto;padding:13px 22px;background:#0d0d1f;border:2px solid #06b6d4;color:#67e8f9;font-family:Impact,'Arial Black',system-ui,sans-serif;font-size:19px;letter-spacing:3px;text-transform:uppercase;border-radius:10px;cursor:pointer;transition:all .15s}
+.btn:hover,.btn.sel{background:#06b6d4;color:#04121a;box-shadow:0 0 18px #06b6d4}
+.btn-mini{width:44px;height:38px;background:#0d0d1f;border:2px solid #475569;color:#cbd5e1;border-radius:8px;cursor:pointer;font:700 15px system-ui}
+.btn-mini:hover{border-color:#06b6d4;color:#67e8f9}
+.btn-mini.mudo{border-color:#ef4444;color:#f87171}
+/* ========== MENU ========== */
+#tela-menu .titulo{margin-top:40px}
+#tela-menu .subtitulo{margin-bottom:24px}
+#lista-niveis{display:flex;flex-direction:column;gap:9px;width:640px}
+#seletor-etapas{display:flex;gap:10px;width:640px;margin-bottom:12px}
+.btn-etapa{flex:1;padding:9px 12px;background:#0c0c1c;border:2px solid #1e293b;border-radius:10px;color:#94a3b8;cursor:pointer;font-family:Impact,'Arial Black',system-ui;font-size:16px;letter-spacing:2px;text-transform:uppercase;transition:all .15s}
+.btn-etapa:hover:not(.bloqueado),.btn-etapa.ativa{border-color:#06b6d4;color:#67e8f9;box-shadow:0 0 12px rgba(6,182,212,.4)}
+.btn-etapa.ativa{background:#0e2633}
+.btn-etapa.bloqueado{opacity:.42;cursor:not-allowed}
+#resumo-etapa{width:640px;margin:-4px 0 10px;text-align:center;font-size:12px;color:#64748b;letter-spacing:1px}
+.cartao-nivel{display:flex;align-items:center;gap:14px;width:100%;padding:10px 16px;background:#0c0c1c;border:2px solid #1e293b;border-radius:12px;color:#e5e7eb;cursor:pointer;text-align:left;transition:all .15s}
+.cartao-nivel:hover:not(.bloqueado),.cartao-nivel.sel:not(.bloqueado){border-color:#06b6d4;box-shadow:0 0 14px rgba(6,182,212,.5);transform:translateX(6px)}
+.cartao-nivel .num{font-family:Impact,'Arial Black',system-ui;font-size:30px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#131327;color:#67e8f9;border:1px solid #164e63;flex:none}
+.cartao-nivel .info{flex:1;display:flex;flex-direction:column}
+.cartao-nivel .nome{font-family:Impact,'Arial Black',system-ui;font-size:20px;letter-spacing:2px;text-transform:uppercase}
+.cartao-nivel .desc{font-size:12px;color:#94a3b8}
+.cartao-nivel .melhor{font-size:13px;color:#fbbf24;text-align:right;min-width:110px}
+.cartao-nivel.bloqueado{opacity:.45;cursor:not-allowed}
+.cartao-nivel.bloqueado .melhor{color:#64748b}
+.menu-botoes{margin-top:14px}
+.dica-menu{margin-top:12px;font-size:12px;color:#475569;letter-spacing:1px}
+/* ========== COMO JOGAR ========== */
+.painel-como{width:700px;margin-top:60px;background:#0c0c1c;border:2px solid #1e293b;border-radius:14px;padding:26px 32px}
+.painel-como h2{font-family:Impact,'Arial Black',system-ui;letter-spacing:4px;color:#67e8f9;margin-bottom:14px;text-transform:uppercase}
+.painel-como p{font-size:14px;line-height:1.6;color:#cbd5e1;margin-bottom:10px}
+.painel-como b{color:#fbbf24}
+.leg-mini{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.leg-mini span{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--c);color:var(--c)}
+/* ========== HUD ========== */
+#hud{width:940px;display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;background:rgba(12,12,28,.85);border:1px solid #1e293b;border-radius:12px}
+.hud-item{display:flex;flex-direction:column;align-items:center;min-width:96px}
+.hud-label{font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase}
+.hud-item span:last-child{font-family:Impact,'Arial Black',system-ui;font-size:22px;letter-spacing:1px}
+#hud-pontos{color:#fff}
+#hud-combo{color:#67e8f9}
+#hud-combo.chama{color:#fb923c;text-shadow:0 0 8px #f97316,0 0 20px #ef4444;animation:chama .35s infinite alternate}
+@keyframes chama{from{transform:scale(1)}to{transform:scale(1.18)}}
+#hud-prec{color:#a3e635}
+.hud-energia{flex:1;max-width:190px}
+#barra-energia{width:100%;height:14px;background:#1e293b;border-radius:8px;overflow:hidden;border:1px solid #334155;margin-top:3px}
+#energia-fill{height:100%;width:50%;border-radius:8px;transition:width .2s}
+#energia-fill.e-verde{background:linear-gradient(90deg,#16a34a,#4ade80);box-shadow:0 0 10px #22c55e}
+#energia-fill.e-amarela{background:linear-gradient(90deg,#ca8a04,#facc15);box-shadow:0 0 10px #eab308}
+#energia-fill.e-vermelha{background:linear-gradient(90deg,#b91c1c,#f87171);box-shadow:0 0 10px #ef4444}
+.hud-nivel{flex:1;max-width:210px}
+#hud-nivel-nome{font-size:12px;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;white-space:nowrap}
+#barra-prog{width:100%;height:8px;background:#1e293b;border-radius:6px;overflow:hidden;margin-top:5px;border:1px solid #334155}
+#prog-fill{height:100%;width:0%;background:linear-gradient(90deg,#0e7490,#22d3ee);transition:width .3s}
+.hud-botoes{display:flex;gap:6px}
+/* ========== RODOVIA ========== */
+#rodovia{position:relative;width:664px;height:560px;margin-top:8px}
+#pistas-fundo{position:absolute;inset:0;clip-path:polygon(15% 0,85% 0,100% 100%,0 100%);background:linear-gradient(#0a0a18,#12122b 70%,#171736);border-radius:6px}
+#pistas-fundo .sep{position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(rgba(255,255,255,.02),rgba(255,255,255,.09))}
+#pistas-fundo .glow-pista{position:absolute;top:0;bottom:0;opacity:.16}
+#linha-acerto{position:absolute;left:0;right:0;bottom:64px;height:3px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);box-shadow:0 0 12px rgba(255,255,255,.6);z-index:3}
+#notas{position:absolute;inset:0;z-index:4}
+.nota{position:absolute;left:0;top:0;width:70px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Impact,'Arial Black',system-ui;font-size:27px;color:#fff;border:2px solid var(--c);background:rgba(9,9,22,.92);box-shadow:0 0 14px var(--c),inset 0 0 12px rgba(255,255,255,.07);will-change:transform,opacity}
+.nota.atingida{transition:opacity .12s;opacity:0 !important}
+#popups{position:absolute;inset:0;pointer-events:none;z-index:7}
+.popup{position:absolute;transform:translate(-50%,-50%);font-family:Impact,'Arial Black',system-ui;font-size:23px;letter-spacing:3px;animation:subir .72s ease-out forwards;white-space:nowrap}
+.popup.p-perfeito{color:#22d3ee;text-shadow:0 0 12px #22d3ee}
+.popup.p-bom{color:#facc15;text-shadow:0 0 10px #eab308}
+.popup.p-errou{color:#f87171;text-shadow:0 0 12px #ef4444}
+@keyframes subir{0%{opacity:1;transform:translate(-50%,-50%) scale(.7)}25%{transform:translate(-50%,-80%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-170%) scale(1)}}
+#fx{position:absolute;inset:0;z-index:6;pointer-events:none}
+#keycaps{position:absolute;bottom:2px;left:0;width:100%;display:flex;z-index:5}
+.kc{flex:1;margin:0 4px;height:56px;border:2px solid var(--c);border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:Impact,'Arial Black',system-ui;font-size:23px;color:var(--c);background:rgba(0,0,0,.55);box-shadow:0 0 9px var(--c);transition:transform .08s}
+.kc.flash{transform:scale(1.14);background:var(--c);color:#05050f}
+/* ========== TECLADO VIRTUAL ========== */
+#teclado-virtual{margin-top:12px;padding:12px 16px;background:rgba(12,12,28,.85);border:1px solid #1e293b;border-radius:14px}
+.fileira{display:flex;gap:6px;justify-content:center;margin-top:6px}
+.fileira:first-child{margin-top:0}
+.tk{width:52px;height:50px;border-radius:9px;border:1px solid #334155;background:#101022;color:#cbd5e1;display:flex;align-items:center;justify-content:center;font:700 17px system-ui;cursor:pointer;transition:background .1s}
+.tk:hover{border-color:#64748b}
+.tk.pulsa{animation:pulsa .45s infinite alternate;border:2px solid var(--c);color:var(--c);box-shadow:0 0 13px var(--c)}
+.tk.ativa{transform:scale(.9);background:var(--c,#334155);color:#05050f}
+@keyframes pulsa{from{transform:scale(1)}to{transform:scale(1.13)}}
+#legenda{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:10px}
+#legenda span{font-size:10px;letter-spacing:1px;padding:2px 8px;border-radius:12px;border:1px solid var(--c);color:var(--c);text-transform:uppercase}
+/* ========== SOBREPOSIÇÕES ========== */
+.sobreposicao{position:absolute;inset:0;background:rgba(4,4,14,.85);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:30}
+.sobreposicao.ativa{display:flex}
+.painel{background:#0c0c1c;border:2px solid #1e293b;border-radius:16px;padding:30px 44px;text-align:center;min-width:430px}
+.painel h2{font-family:Impact,'Arial Black',system-ui;font-size:38px;letter-spacing:5px;text-transform:uppercase;color:#67e8f9;text-shadow:0 0 14px #06b6d4;margin-bottom:16px}
+.painel h2.vermelho{color:#f87171;text-shadow:0 0 14px #ef4444}
+.painel h2.verde{color:#4ade80;text-shadow:0 0 14px #22c55e}
+.stats{margin:8px 0 18px;font-size:16px;line-height:2;color:#cbd5e1}
+.stats b{color:#fbbf24;font-family:Impact,'Arial Black',system-ui;letter-spacing:1px}
+#nota-final{font-family:Impact,'Arial Black',system-ui;font-size:110px;line-height:1;color:#facc15;text-shadow:0 0 20px #eab308,0 0 50px #ca8a04;margin:6px 0}
+#contagem-num{font-family:Impact,'Arial Black',system-ui;font-size:170px;color:#fff;text-shadow:0 0 26px #06b6d4,0 0 70px #06b6d4}
+#contagem-num.zoom{animation:zoom .65s ease-out}
+@keyframes zoom{0%{transform:scale(2.4);opacity:0}35%{opacity:1}100%{transform:scale(1);opacity:1}}
+/* ========== SHAKE / TESTE ========== */
+.tremendo{animation:treme .3s}
+@keyframes treme{0%,100%{transform:translate(-50%,-50%) scale(var(--escala,1))}20%{transform:translate(calc(-50% - 9px),calc(-50% + 5px)) scale(var(--escala,1))}40%{transform:translate(calc(-50% + 8px),calc(-50% - 6px)) scale(var(--escala,1))}60%{transform:translate(calc(-50% - 6px),calc(-50% - 4px)) scale(var(--escala,1))}80%{transform:translate(calc(-50% + 7px),calc(-50% + 6px)) scale(var(--escala,1))}}
+#tela-teste{z-index:60}
+#teste-texto{font-family:ui-monospace,Consolas,monospace;font-size:19px;line-height:1.9;background:#050510;border:3px solid #334155;border-radius:14px;padding:30px 44px;white-space:pre}
+#teste-texto.pass{border-color:#22c55e;color:#4ade80;text-shadow:0 0 8px #22c55e}
+#teste-texto.fail{border-color:#ef4444;color:#f87171;text-shadow:0 0 8px #ef4444}
+/* ========== TELAS LARGAS ========== */
+@media (min-aspect-ratio:3/2) {
+  :root{--palco-largura:1440px;--palco-altura:800px}
+
+  #tela-menu .titulo{margin-top:8px}
+  #tela-menu .subtitulo{margin-bottom:14px}
+  #seletor-etapas,#resumo-etapa,#lista-niveis{width:1040px}
+  #seletor-etapas{margin-bottom:8px}
+  #resumo-etapa{margin-bottom:8px}
+  #lista-niveis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));grid-auto-flow:column;gap:8px 12px}
+  .cartao-nivel{padding:8px 14px}
+  .cartao-nivel .num{width:42px;height:42px;font-size:28px}
+  .menu-botoes{display:flex;gap:12px;margin-top:10px}
+  .menu-botoes .btn{width:280px;margin:0}
+  .dica-menu{margin-top:9px}
+
+  .painel-como{width:1040px;margin-top:46px;padding:32px 42px}
+  .painel-como p{font-size:16px;line-height:1.65}
+
+  #tela-jogo.ativa{
+    display:grid;
+    grid-template-columns:664px 620px;
+    grid-template-rows:auto 560px;
+    column-gap:40px;
+    row-gap:14px;
+    align-content:center;
+    justify-content:center;
+    align-items:start;
+  }
+  #hud{grid-column:1/-1;grid-row:1;width:1324px;margin-top:0;justify-self:center;justify-content:center}
+  .hud-energia{max-width:280px}
+  .hud-nivel{max-width:300px}
+  #rodovia{grid-column:1;grid-row:2;margin-top:0}
+  #teclado-virtual{grid-column:2;grid-row:2;width:620px;margin-top:0;padding:18px 20px;align-self:center}
+}
+</style>
+</head>
+<body>
+<canvas id="estrelas"></canvas>
+<div id="vinheta"></div>
+<div id="palco">
+  <!-- TELA: MENU -->
+  <section id="tela-menu" class="tela ativa">
+    <h1 class="titulo">TYPE<span>HERO</span></h1>
+    <p class="subtitulo">Herói da Digitação</p>
+    <div id="seletor-etapas"></div>
+    <p id="resumo-etapa"></p>
+    <div id="lista-niveis"></div>
+    <div class="menu-botoes">
+      <button id="btn-como" class="btn">Como Jogar</button>
+      <button id="btn-som-menu" class="btn">Som: Ligado</button>
+    </div>
+    <p class="dica-menu">← →: etapa &nbsp;·&nbsp; ↑ ↓: fase &nbsp;·&nbsp; Enter: confirmar &nbsp;·&nbsp; M: som &nbsp;·&nbsp; Esc: voltar</p>
+  </section>
+
+  <!-- TELA: COMO JOGAR -->
+  <section id="tela-como" class="tela">
+    <div class="painel-como">
+      <h2>Como Jogar</h2>
+      <p>A rodovia tem <b>8 pistas</b>, uma para cada <b>dedo</b> do teclado ABNT2. A posição da pista corresponde à posição do dedo: treine sem olhar para as mãos!</p>
+      <div class="leg-mini" id="leg-como"></div>
+      <p>As notas descem pelas pistas. Pressione a <b>tecla da letra</b> quando a nota cruzar a <b>zona de acerto</b> (os keycaps neon na base). Quanto mais perto da linha, melhor: <b>PERFEITO</b> vale 100 pontos, <b>BOM</b> vale 50.</p>
+      <p>A letra precisa ser <b>exatamente igual</b> à nota: teclas da mesma pista não substituem umas às outras. <b>G</b> aparece na fase da mão esquerda e <b>H</b> na fase da mão direita, sempre como alvos próprios.</p>
+      <p>O curso tem <b>3 etapas</b>. A velocidade permanece igual em todas as fases da etapa e só aumenta quando você conclui a última fase e avança para a etapa seguinte.</p>
+      <p>Acertos seguidos sobem o <b>COMBO</b> e o multiplicador (até ×4). Pressionar uma letra errada ou deixar uma nota passar zera o combo e drena <b>ENERGIA</b>. Se a energia chegar a zero, é <b>Game Over</b>.</p>
+      <p>Atalhos: <b>Esc</b> pausa. Nos menus, <b>M</b> liga/desliga o som; durante a fase, use o botão de som, pois M também é uma letra do treino. Você também pode clicar nas teclas do teclado virtual ou tocar na pista.</p>
+      <button id="btn-voltar-como" class="btn">Voltar</button>
+    </div>
+  </section>
+
+  <!-- TELA: JOGO -->
+  <section id="tela-jogo" class="tela">
+    <header id="hud">
+      <div class="hud-item"><span class="hud-label">Pontuação</span><span id="hud-pontos">0</span></div>
+      <div class="hud-item"><span class="hud-label">Combo</span><span id="hud-combo">0 ×1</span></div>
+      <div class="hud-item"><span class="hud-label">Precisão</span><span id="hud-prec">100%</span></div>
+      <div class="hud-item hud-energia"><span class="hud-label">Energia</span><div id="barra-energia"><div id="energia-fill" class="e-verde"></div></div></div>
+      <div class="hud-item hud-nivel"><span id="hud-nivel-nome">Nível</span><div id="barra-prog"><div id="prog-fill"></div></div></div>
+      <div class="hud-botoes"><button id="btn-pausa" class="btn-mini" title="Pausa (Esc)">II</button><button id="btn-mute" class="btn-mini" title="Som">M</button></div>
+    </header>
+    <div id="rodovia">
+      <div id="pistas-fundo"></div>
+      <div id="linha-acerto"></div>
+      <div id="notas"></div>
+      <canvas id="fx" width="664" height="560"></canvas>
+      <div id="popups"></div>
+      <div id="keycaps"></div>
+    </div>
+    <div id="teclado-virtual">
+      <div class="fileira" id="fk0"></div>
+      <div class="fileira" id="fk1"></div>
+      <div class="fileira" id="fk2"></div>
+      <div id="legenda"></div>
+    </div>
+  </section>
+
+  <!-- SOBREPOSIÇÕES -->
+  <div id="tela-contagem" class="sobreposicao"><div id="contagem-num">3</div></div>
+
+  <div id="tela-pausa" class="sobreposicao">
+    <div class="painel">
+      <h2>Pausa</h2>
+      <button id="btn-continuar" class="btn op-pausa">Continuar</button>
+      <button id="btn-reiniciar" class="btn op-pausa">Reiniciar</button>
+      <button id="btn-menu-pausa" class="btn op-pausa">Menu</button>
+    </div>
+  </div>
+
+  <div id="tela-completo" class="sobreposicao">
+    <div class="painel">
+      <h2 id="titulo-completo" class="verde">Fase concluída!</h2>
+      <div id="nota-final">S</div>
+      <div id="stats-completo" class="stats"></div>
+      <button id="btn-proximo" class="btn">Próximo Nível</button>
+      <button id="btn-repetir" class="btn">Repetir</button>
+      <button id="btn-menu-completo" class="btn">Menu</button>
+    </div>
+  </div>
+
+  <div id="tela-gameover" class="sobreposicao">
+    <div class="painel">
+      <h2 class="vermelho">Game Over</h2>
+      <div id="stats-gameover" class="stats"></div>
+      <button id="btn-tentar" class="btn">Tentar Novamente</button>
+      <button id="btn-menu-gameover" class="btn">Menu</button>
+    </div>
+  </div>
+
+  <div id="tela-teste" class="sobreposicao"><pre id="teste-texto">executando autoteste...</pre></div>
+</div>
+<script>
+'use strict';
+/* ==================================================================
+   TYPEHERO — Herói da Digitação
+   Jogo de digitação estilo Guitar Hero (ABNT2 / PT-BR)
+   Seções: CONFIG / PERSISTÊNCIA / ÁUDIO / CHART / ESTADO /
+           TELAS / RENDER / INPUT / FLUXO / AUTO-TESTE
+   ================================================================== */
+
+/* ==================== CONFIG ==================== */
+const TESTE = new URLSearchParams(location.search).get('test') === '1';
+
+const LANES = [
+  {teclas:['q','a','z'],          cor:'#22c55e', dedo:'Mindinho esq.'},
+  {teclas:['w','s','x'],          cor:'#ef4444', dedo:'Anelar esq.'},
+  {teclas:['e','d','c'],          cor:'#eab308', dedo:'Médio esq.'},
+  {teclas:['r','f','v','t','g','b'], cor:'#f97316', dedo:'Indicador esq.'},
+  {teclas:['y','h','n','u','j','m'], cor:'#06b6d4', dedo:'Indicador dir.'},
+  {teclas:['i','k',','],          cor:'#a855f7', dedo:'Médio dir.'},
+  {teclas:['o','l','.'],          cor:'#ec4899', dedo:'Anelar dir.'},
+  {teclas:['p','ç',';'],          cor:'#84cc16', dedo:'Mindinho dir.'}
+];
+const TECLA_PISTA = {};
+LANES.forEach((l, i) => l.teclas.forEach(t => { TECLA_PISTA[t] = i; }));
+
+const LARG_PISTA = 83;            // 664px / 8 pistas
+const Y_ACERTO = 496;             // linha de acerto (centro dos keycaps)
+const CENTRO_X = 332;             // centro horizontal da rodovia
+const JANELA_PERFEITO = 55, JANELA_BOM = 110, LIMITE_ERRO = 130;
+
+// A velocidade pertence à etapa. Dentro dela, cada fase muda somente
+// o conjunto de teclas treinado.
+const ETAPAS = [
+  {nome:'Etapa 1', titulo:'Fundamentos', ritmo:'base',     bpm:75, vel:210, total:32},
+  {nome:'Etapa 2', titulo:'Ritmo',       ritmo:'moderada', bpm:85, vel:240, total:32},
+  {nome:'Etapa 3', titulo:'Agilidade',   ritmo:'rápida',   bpm:95, vel:270, total:32}
+];
+const FASES = [
+  {nome:'Mão esquerda',      teclas:'asdfg', desc:'Treine A S D F G com a mão esquerda'},
+  {nome:'Mão direita',       teclas:'hjklç', desc:'Treine H J K L Ç com a mão direita'},
+  {nome:'Fileira central',   teclas:'asdfghjklç', desc:'Combine as duas mãos na fileira central'},
+  {nome:'Fileira superior',  teclas:'qwertyuiop', desc:'Treine toda a fileira superior'},
+  {nome:'Central + superior',teclas:'qwertyuiopasdfghjklç', desc:'Combine as fileiras central e superior'},
+  {nome:'Fileira inferior',  teclas:'zxcvbnm,.;', desc:'Treine toda a fileira inferior'},
+  {nome:'Teclado completo',  teclas:'qwertyuiopasdfghjklçzxcvbnm,.;', desc:'Combine as três fileiras do teclado'}
+];
+const FASES_POR_ETAPA = FASES.length;
+const NIVEIS = ETAPAS.flatMap((etapa, etapaIdx) => FASES.map((fase, faseIdx) => ({
+  ...etapa, ...fase, etapaIdx, faseIdx
+})));
+const TOTAL_FASES = NIVEIS.length;
+function indiceNivel(etapaIdx, faseIdx) { return etapaIdx * FASES_POR_ETAPA + faseIdx; }
+
+const CADEADO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 1 1 6 0v3H9z"/></svg>';
+
+/* ==================== PERSISTÊNCIA ==================== */
+const SAVE_KEY = 'typehero_save_v3';
+let save = {desbloqueado:1, melhores:{}, cursoConcluido:false};
+function lerSave(chave) {
+  try {
+    const raw = localStorage.getItem(chave);
+    if (!raw) return null;
+    const valor = JSON.parse(raw);
+    return valor && typeof valor === 'object' ? valor : null;
+  } catch (e) { return null; }
+}
+const saveNovo = lerSave(SAVE_KEY);
+if (saveNovo) save = Object.assign(save, saveNovo);
+else { // preserva o avanço antigo, mas reinicia placares incompatíveis com o curso novo
+  const antigo = lerSave('typehero_save_v2') || lerSave('typehero_save_v1');
+  if (antigo) {
+    save.desbloqueado = Math.min(FASES_POR_ETAPA, Math.max(1, Number(antigo.desbloqueado) || 1));
+  }
+}
+save.desbloqueado = Math.min(TOTAL_FASES, Math.max(1, Number(save.desbloqueado) || 1));
+if (!save.melhores || typeof save.melhores !== 'object') save.melhores = {};
+save.cursoConcluido = Boolean(save.cursoConcluido);
+function salvar() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+salvar();
+
+let mudo = false;
+try { mudo = localStorage.getItem('typehero_mute') === '1'; } catch (e) {}
+function setMudo(v) {
+  mudo = v;
+  try { localStorage.setItem('typehero_mute', v ? '1' : '0'); } catch (e) {}
+  atualizarBotoesMudo();
+}
+
+/* ==================== ÁUDIO (Web Audio API, 100% sintetizado) ==================== */
+let AC = null, master = null, ruidoBuf = null;
+function audioInit() {
+  if (TESTE) return; // autoteste roda sem áudio
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      master = AC.createGain();
+      master.gain.value = 0.5;
+      master.connect(AC.destination);
+      ruidoBuf = AC.createBuffer(1, AC.sampleRate * 0.1, AC.sampleRate);
+      const d = ruidoBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    } catch (e) { AC = null; }
+  }
+  if (AC && AC.state === 'suspended' && G.estado !== 'pause') AC.resume();
+}
+function tom(freq, dur, tipo, vol, quando, slidePara) {
+  if (!AC || mudo) return;
+  const t0 = quando !== undefined ? quando : AC.currentTime;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = tipo || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  if (slidePara) o.frequency.exponentialRampToValueAtTime(Math.max(20, slidePara), t0 + dur);
+  g.gain.setValueAtTime(vol || 0.2, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(master);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function ruido(dur, vol, quando, corte) {
+  if (!AC || mudo) return;
+  const t0 = quando !== undefined ? quando : AC.currentTime;
+  const src = AC.createBufferSource(); src.buffer = ruidoBuf;
+  const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = corte || 5000;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(f); f.connect(g); g.connect(master);
+  src.start(t0); src.stop(t0 + dur + 0.02);
+}
+// SFX
+function sfxAcerto() {           // pitch sobe a cada 10 de combo
+  const f = 500 + Math.min(4, Math.floor(G.combo / 10)) * 110;
+  tom(f, 0.09, 'square', 0.16); tom(f * 2, 0.07, 'sine', 0.1);
+}
+function sfxErro()    { tom(130, 0.28, 'sawtooth', 0.22, undefined, 60); }
+function sfxErrada()  { tom(190, 0.05, 'square', 0.14); }
+function sfxBeep(i)   { tom(i === 3 ? 880 : 440, i === 3 ? 0.3 : 0.14, 'sine', 0.25); }
+function sfxCompleto(){ [523, 659, 784, 1047].forEach((f, i) => tom(f, 0.22, 'triangle', 0.2, AC ? AC.currentTime + i * 0.13 : 0)); }
+function sfxGameOver(){ tom(420, 0.85, 'sawtooth', 0.2, undefined, 55); }
+function sfxUI()      { tom(720, 0.05, 'sine', 0.12); }
+// Beat de fundo (kick + hi-hat) na grade de colcheias do BPM
+const beat = {ativo:false, passo:0, inicioCtx:0};
+function iniciarBeat() {
+  if (!AC || TESTE) return;
+  beat.ativo = true; beat.passo = 0; beat.inicioCtx = AC.currentTime + 0.05;
+}
+function pararBeat() { beat.ativo = false; }
+function agendarBeat() {
+  if (!beat.ativo || !AC || !G.cfg) return;
+  const passoDur = 60 / G.cfg.bpm / 2; // colcheia
+  const horizonte = AC.currentTime + 0.12;
+  if (mudo) { // avança o relógio sem tocar, para não explodir ao desmutar
+    beat.passo = Math.max(beat.passo, Math.floor((horizonte - beat.inicioCtx) / passoDur));
+    return;
+  }
+  while (beat.inicioCtx + beat.passo * passoDur < horizonte) {
+    const t = beat.inicioCtx + beat.passo * passoDur;
+    if (beat.passo % 2 === 0) tom(150, 0.16, 'sine', 0.32, t, 42);   // kick: senoide com decay
+    else ruido(0.03, 0.07, t, 6000);                                  // hi-hat: ruído filtrado
+    beat.passo++;
+  }
+}
+setInterval(agendarBeat, 30);
+
+/* ==================== CHART (geração de notas) ==================== */
+// Gera um chart com padrões rítmicos: subdivisões de 1/4 e 1/8 do BPM,
+// alternância esquerda/direita e intervalo mínimo por pista.
+function gerarChart(nv) {
+  const cfg = NIVEIS[nv];
+  const todas = cfg.teclas.split('');
+  function novoCiclo() {
+    const ciclo = todas.slice();
+    for (let i = ciclo.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      [ciclo[i], ciclo[j]] = [ciclo[j], ciclo[i]];
+    }
+    return ciclo;
+  }
+  const passo = 60 / cfg.bpm / 2; // colcheia em segundos
+  const u = 5; // mesma grade musical; o BPM da etapa controla a cadência
+  const padrao = [u, u, Math.max(2, u - 2), u, u, u, Math.max(2, u - 2), u + 2, u];
+  const notas = [];
+  const ult = new Array(8).fill(-99);
+  const minGap = (JANELA_BOM * 2 + 10) / cfg.vel; // só uma nota por vez na janela da pista
+  let ciclo = novoCiclo();
+  let t = 2.5, pi = 0, lado = 0;
+  while (notas.length < cfg.total) {
+    const prontas = ciclo.filter(k => t - ult[TECLA_PISTA[k]] >= minGap);
+    const mesmoLado = prontas.filter(k => (TECLA_PISTA[k] < 4) === (lado === 0));
+    const candidatas = mesmoLado.length ? mesmoLado : prontas;
+    if (candidatas.length) {
+      const tecla = candidatas[(Math.random() * candidatas.length) | 0];
+      const p = TECLA_PISTA[tecla];
+      notas.push({t, p, tecla});
+      ciclo.splice(ciclo.indexOf(tecla), 1);
+      if (!ciclo.length) ciclo = novoCiclo();
+      ult[p] = t; lado = 1 - lado;
+      t += padrao[pi % padrao.length] * passo; pi++;
+      continue;
+    }
+    t += passo;
+  }
+  return notas;
+}
+
+/* ==================== ESTADO ==================== */
+const G = {
+  estado:'menu', nivelIdx:0, cfg:null,
+  chart:[], chartIdx:0, ativas:[],
+  inicioStamp:0, pausadoEm:0,
+  pontos:0, combo:0, comboMax:0, energia:50,
+  perf:0, bons:0, erros:0, teclasErradas:0, processadas:0, totalNotas:0
+};
+function agora() { return (performance.now() - G.inicioStamp) / 1000; }
+function mult() { return G.combo >= 30 ? 4 : G.combo >= 20 ? 3 : G.combo >= 10 ? 2 : 1; }
+function precisao() {
+  const tentativas = G.processadas + G.teclasErradas;
+  return (G.perf + G.bons * 0.5) / Math.max(1, tentativas) * 100;
+}
+
+/* ==================== TELAS ==================== */
+const $ = id => document.getElementById(id);
+const palco = $('palco');
+let menuEtapa = 0, menuSel = 0, pausaSel = 0;
+
+function mostrarTela(nome) {
+  document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
+  if (nome) $('tela-' + nome).classList.add('ativa');
+}
+function mostrarOverlay(id) {
+  document.querySelectorAll('.sobreposicao').forEach(o => o.classList.remove('ativa'));
+  if (id) $(id).classList.add('ativa');
+}
+function esconderOverlays() { mostrarOverlay(null); }
+
+function etapaDesbloqueada(etapaIdx) {
+  return save.desbloqueado >= indiceNivel(etapaIdx, 0) + 1;
+}
+function etapaConcluida(etapaIdx) {
+  const ultimoNivel = indiceNivel(etapaIdx, FASES_POR_ETAPA - 1);
+  return etapaIdx === ETAPAS.length - 1 ? save.cursoConcluido : save.desbloqueado > ultimoNivel + 1;
+}
+function renderMenu() {
+  const seletor = $('seletor-etapas');
+  seletor.innerHTML = '';
+  ETAPAS.forEach((etapa, etapaIdx) => {
+    const bloq = !etapaDesbloqueada(etapaIdx);
+    const b = document.createElement('button');
+    b.className = 'btn-etapa' + (etapaIdx === menuEtapa ? ' ativa' : '') + (bloq ? ' bloqueado' : '');
+    b.textContent = etapa.nome + (etapaConcluida(etapaIdx) ? ' ✓' : '');
+    b.disabled = bloq;
+    b.addEventListener('click', () => {
+      menuEtapa = etapaIdx; menuSel = 0; sfxUI(); renderMenu();
+    });
+    seletor.appendChild(b);
+  });
+
+  const etapa = ETAPAS[menuEtapa];
+  $('resumo-etapa').textContent = etapa.titulo + ' · velocidade ' + etapa.ritmo + ' · ' + etapa.bpm + ' BPM';
+  const lista = $('lista-niveis');
+  lista.innerHTML = '';
+  FASES.forEach((fase, faseIdx) => {
+    const i = indiceNivel(menuEtapa, faseIdx);
+    const bloq = i + 1 > save.desbloqueado;
+    const melhor = save.melhores[i + 1];
+    const b = document.createElement('button');
+    b.className = 'cartao-nivel' + (bloq ? ' bloqueado' : '') + (faseIdx === menuSel ? ' sel' : '');
+    b.disabled = bloq;
+    let melhorTxt;
+    if (bloq) melhorTxt = CADEADO_SVG;
+    else if (melhor) melhorTxt = melhor.pts + ' pts · ' + melhor.acc.toFixed(0) + '%';
+    else melhorTxt = '—';
+    b.innerHTML = '<span class="num">' + (faseIdx + 1) + '</span>' +
+      '<span class="info"><span class="nome">' + fase.nome + '</span>' +
+      '<span class="desc">' + fase.desc + '</span></span>' +
+      '<span class="melhor">' + melhorTxt + '</span>';
+    b.addEventListener('click', () => {
+      if (bloq) { sfxErrada(); return; }
+      menuSel = faseIdx; audioInit(); sfxUI(); iniciarNivel(i);
+    });
+    lista.appendChild(b);
+  });
+}
+function atualizarBotoesMudo() {
+  $('btn-som-menu').textContent = 'Som: ' + (mudo ? 'Desligado' : 'Ligado');
+  $('btn-mute').classList.toggle('mudo', mudo);
+}
+
+/* ==================== FLUXO ==================== */
+let timerContagem = null;
+
+function iniciarNivel(i) {
+  if (!Number.isInteger(i) || i < 0 || i >= TOTAL_FASES) return;
+  G.nivelIdx = i; G.cfg = NIVEIS[i];
+  menuEtapa = G.cfg.etapaIdx; menuSel = G.cfg.faseIdx;
+  G.pontos = 0; G.combo = 0; G.comboMax = 0; G.energia = 50;
+  G.perf = 0; G.bons = 0; G.erros = 0; G.teclasErradas = 0; G.processadas = 0;
+  G.chartIdx = 0; G.ativas = [];
+  $('notas').innerHTML = ''; $('popups').innerHTML = '';
+  poolNotas.length = 0;
+  G.chart = gerarChart(i); G.totalNotas = G.chart.length;
+  mostrarTela('jogo');
+  $('hud-nivel-nome').textContent = 'Etapa ' + (G.cfg.etapaIdx + 1) + ' · Fase ' + (G.cfg.faseIdx + 1) + ' — ' + G.cfg.nome;
+  atualizarHUD();
+  G.estado = 'contagem';
+  rodarContagem(comecarJogo);
+}
+function rodarContagem(cb) {
+  if (TESTE) { esconderOverlays(); cb(); return; } // autoteste pula a contagem
+  mostrarOverlay('tela-contagem');
+  const seq = ['3', '2', '1', 'VAI!'];
+  let i = 0;
+  const el = $('contagem-num');
+  (function passo() {
+    if (G.estado !== 'contagem') return; // cancelado (Esc)
+    if (i < seq.length) {
+      el.textContent = seq[i];
+      el.classList.remove('zoom'); void el.offsetWidth; el.classList.add('zoom');
+      sfxBeep(i); i++;
+      timerContagem = setTimeout(passo, 700);
+    } else { esconderOverlays(); cb(); }
+  })();
+}
+function comecarJogo() {
+  G.estado = 'game';
+  G.inicioStamp = performance.now();
+  iniciarBeat();
+}
+function pausar() {
+  if (G.estado !== 'game') return;
+  G.estado = 'pause'; G.pausadoEm = performance.now();
+  pausaSel = 0; destacarPausa();
+  mostrarOverlay('tela-pausa');
+  if (AC) AC.suspend();
+}
+function retomar() {
+  if (G.estado !== 'pause') return;
+  esconderOverlays();
+  G.inicioStamp += performance.now() - G.pausadoEm;
+  G.estado = 'game';
+  if (AC) AC.resume();
+  sfxUI();
+}
+function limparAtivas() {
+  for (const n of G.ativas) if (n.el && n.el.parentNode) n.el.parentNode.removeChild(n.el);
+  G.ativas = [];
+}
+function voltarMenu() {
+  pararBeat(); limparAtivas();
+  clearTimeout(timerContagem);
+  G.estado = 'menu';
+  esconderOverlays(); mostrarTela('menu'); renderMenu();
+}
+function fimDeNivel() {
+  pararBeat(); limparAtivas();
+  G.estado = 'complete';
+  const acc = precisao();
+  const notaFinal = acc >= 95 ? 'S' : acc >= 85 ? 'A' : acc >= 70 ? 'B' : 'C';
+  const passou = acc >= 70 && G.energia > 0;
+  const chave = G.nivelIdx + 1;
+  const ultimaFaseDaEtapa = G.cfg.faseIdx === FASES_POR_ETAPA - 1;
+  const ultimaFaseDoCurso = G.nivelIdx === TOTAL_FASES - 1;
+  if (passou && !ultimaFaseDoCurso)
+    save.desbloqueado = Math.max(save.desbloqueado, G.nivelIdx + 2);
+  if (passou && ultimaFaseDoCurso) save.cursoConcluido = true;
+  const ant = save.melhores[chave];
+  if (passou && (!ant || G.pontos > ant.pts)) save.melhores[chave] = {pts: G.pontos, acc};
+  salvar();
+  if (passou) sfxCompleto(); else sfxErro();
+  const titulo = $('titulo-completo');
+  titulo.className = passou ? 'verde' : 'vermelho';
+  if (!passou) titulo.textContent = 'Fase não concluída';
+  else if (ultimaFaseDoCurso) titulo.textContent = 'Curso completo!';
+  else if (ultimaFaseDaEtapa) titulo.textContent = 'Etapa ' + (G.cfg.etapaIdx + 1) + ' concluída!';
+  else titulo.textContent = 'Fase concluída!';
+  $('nota-final').textContent = notaFinal;
+  $('nota-final').style.color = notaFinal === 'S' ? '#facc15' : notaFinal === 'A' ? '#4ade80' : notaFinal === 'B' ? '#67e8f9' : '#94a3b8';
+  $('stats-completo').innerHTML =
+    'Etapa <b>' + (G.cfg.etapaIdx + 1) + '</b> · Fase <b>' + (G.cfg.faseIdx + 1) + '</b><br>' +
+    'Pontuação: <b>' + G.pontos + '</b><br>' +
+    'Precisão: <b>' + acc.toFixed(1) + '%</b><br>' +
+    'Combo máximo: <b>' + G.comboMax + '</b><br>' +
+    'Teclas erradas: <b>' + G.teclasErradas + '</b>' +
+    (passou ? '' : '<br><span style="color:#f87171">Precisão mínima de 70% para desbloquear</span>');
+  const proximo = $('btn-proximo');
+  proximo.style.display = (passou && !ultimaFaseDoCurso) ? 'block' : 'none';
+  proximo.textContent = ultimaFaseDoCurso ? 'Curso concluído' :
+    ultimaFaseDaEtapa ? 'Iniciar Etapa ' + (G.cfg.etapaIdx + 2) : 'Próxima Fase';
+  mostrarOverlay('tela-completo');
+}
+function gameOver() {
+  pararBeat();
+  G.estado = 'gameover';
+  sfxErro(); sfxGameOver();
+  const acc = precisao();
+  $('stats-gameover').innerHTML =
+    'Etapa <b>' + (G.cfg.etapaIdx + 1) + '</b> · Fase <b>' + (G.cfg.faseIdx + 1) + '</b><br>' +
+    'Treino: <b>' + G.cfg.nome + '</b><br>' +
+    'Pontuação: <b>' + G.pontos + '</b><br>' +
+    'Precisão: <b>' + acc.toFixed(1) + '%</b><br>' +
+    'Combo máximo: <b>' + G.comboMax + '</b><br>' +
+    'Teclas erradas: <b>' + G.teclasErradas + '</b><br>' +
+    'Notas processadas: <b>' + G.processadas + '</b>';
+  mostrarOverlay('tela-gameover');
+  limparAtivas();
+}
+function destacarPausa() {
+  document.querySelectorAll('.op-pausa').forEach((b, i) => b.classList.toggle('sel', i === pausaSel));
+}
+function checkMorte() {
+  if (G.energia <= 0 && G.estado === 'game') { G.energia = 0; atualizarHUD(); gameOver(); }
+}
+
+/* ==================== RENDER ==================== */
+// Starfield parallax de fundo (canvas leve, 3 profundidades)
+const cvEst = $('estrelas'), ctxEst = cvEst.getContext('2d');
+let estrelas = [];
+function initEstrelas() {
+  cvEst.width = innerWidth; cvEst.height = innerHeight;
+  estrelas = [];
+  for (let i = 0; i < 130; i++) {
+    const z = 0.25 + Math.random() * 0.75;
+    estrelas.push({x: Math.random() * cvEst.width, y: Math.random() * cvEst.height, z,
+      r: z * 1.7, tom: Math.random() < 0.15 ? (Math.random() < 0.5 ? '#67e8f9' : '#f9a8d4') : '#ffffff'});
+  }
+}
+function desenharEstrelas(dt) {
+  ctxEst.clearRect(0, 0, cvEst.width, cvEst.height);
+  for (const s of estrelas) {
+    s.y += s.z * 26 * dt;
+    if (s.y > cvEst.height + 2) { s.y = -2; s.x = Math.random() * cvEst.width; }
+    ctxEst.globalAlpha = 0.25 + s.z * 0.55;
+    ctxEst.fillStyle = s.tom;
+    ctxEst.fillRect(s.x, s.y, s.r, s.r);
+  }
+  ctxEst.globalAlpha = 1;
+}
+
+// Partículas (canvas overlay, máx. 60)
+const fxC = $('fx'), fxX = fxC.getContext('2d');
+let parts = [];
+function explosao(x, y, cor) {
+  for (let i = 0; i < 10 && parts.length < 60; i++) {
+    parts.push({x, y, vx: (Math.random() - 0.5) * 280, vy: -Math.random() * 240 - 40, vida: 0.5, cor});
+  }
+}
+function atualizarParticulas(dt) {
+  fxX.clearRect(0, 0, fxC.width, fxC.height);
+  if (!parts.length) return;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.vida -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 520 * dt;
+    if (p.vida <= 0) { parts.splice(i, 1); continue; }
+    fxX.globalAlpha = p.vida / 0.5;
+    fxX.fillStyle = p.cor;
+    fxX.fillRect(p.x - 2.5, p.y - 2.5, 5, 5);
+  }
+  fxX.globalAlpha = 1;
+}
+
+// Popups de julgamento
+function popup(texto, pista, classe) {
+  const d = document.createElement('div');
+  d.className = 'popup ' + classe;
+  d.textContent = texto;
+  d.style.left = (pista * LARG_PISTA + LARG_PISTA / 2) + 'px';
+  d.style.top = (Y_ACERTO - 34) + 'px';
+  $('popups').appendChild(d);
+  setTimeout(() => d.remove(), 760);
+}
+function tremor() {
+  palco.classList.remove('tremendo'); void palco.offsetWidth;
+  palco.classList.add('tremendo');
+}
+
+// Pool de elementos de nota (DOM com transform/opacity apenas)
+const poolNotas = [];
+function obterElNota() {
+  if (poolNotas.length) return poolNotas.pop();
+  const el = document.createElement('div');
+  el.className = 'nota';
+  return el;
+}
+
+// Spawns
+function tempoViagem(vel) { return (Y_ACERTO + 70) / vel; }
+function criarNota(c) {
+  const n = {pista: c.p, tecla: c.tecla, tHit: c.t, vel: G.cfg.vel, y: -70, w: 70, h: 52, autoT: false};
+  const el = obterElNota();
+  el.className = 'nota';
+  el.textContent = c.tecla.toUpperCase();
+  el.style.setProperty('--c', LANES[c.p].cor);
+  $('notas').appendChild(el);
+  n.el = el;
+  G.ativas.push(n);
+}
+function spawnDoChart(t) {
+  const tv = tempoViagem(G.cfg.vel);
+  while (G.chartIdx < G.chart.length && G.chart[G.chartIdx].t - t <= tv) {
+    const c = G.chart[G.chartIdx++];
+    criarNota(c);
+  }
+}
+
+// Posicionamento com perspectiva simulada (matemática de acerto 2D linear)
+function posicionar(n) {
+  const p = Math.max(0, Math.min(1, n.y / Y_ACERTO));
+  const esc = 0.55 + 0.55 * p;                 // 0.55 -> 1.1
+  const op = 0.4 + 0.6 * p;                    // 0.4 -> 1
+  const cx = n.pista * LARG_PISTA + LARG_PISTA / 2;
+  const x = CENTRO_X + (cx - CENTRO_X) * (0.55 + 0.45 * p); // convergência ao topo
+  n.el.style.transform = 'translate(' + (x - n.w / 2) + 'px,' + (n.y - n.h / 2) + 'px) scale(' + esc.toFixed(3) + ')';
+  n.el.style.opacity = op.toFixed(3);
+}
+function removerNota(n) {
+  const i = G.ativas.indexOf(n);
+  if (i >= 0) G.ativas.splice(i, 1);
+  if (n.el) {
+    n.el.remove();
+    if (poolNotas.length < 40) poolNotas.push(n.el);
+  }
+}
+
+/* ---------- Julgamento ---------- */
+function acertar(n, tipo) {
+  const m = mult();
+  G.combo++; G.comboMax = Math.max(G.comboMax, G.combo);
+  G.processadas++;
+  const cor = LANES[n.pista].cor;
+  if (tipo === 'perfeito') {
+    G.pontos += 100 * m; G.perf++;
+    G.energia = Math.min(100, G.energia + 3);
+    popup('PERFEITO', n.pista, 'p-perfeito');
+    explosao(n.pista * LARG_PISTA + LARG_PISTA / 2, Y_ACERTO, cor);
+  } else {
+    G.pontos += 50 * m; G.bons++;
+    G.energia = Math.min(100, G.energia + 1.5);
+    popup('BOM', n.pista, 'p-bom');
+  }
+  sfxAcerto();
+  flashKeycap(n.pista);
+  removerNota(n);
+  atualizarHUD();
+}
+function errar(n) { // nota passou da linha
+  G.combo = 0; G.erros++; G.processadas++;
+  G.energia -= 8;
+  popup('ERROU', n.pista, 'p-errou');
+  tremor(); sfxErro();
+  removerNota(n);
+  atualizarHUD();
+  checkMorte();
+}
+function teclaErrada() { // tecla sem a nota correspondente na zona de acerto
+  G.combo = 0; G.teclasErradas++;
+  G.energia -= 3;
+  sfxErrada();
+  atualizarHUD();
+  checkMorte();
+}
+function teclaJogo(k) {
+  if (G.estado !== 'game') return;
+  const pista = TECLA_PISTA[k];
+  if (pista === undefined) return;
+  let best = null, bestD = Infinity;
+  for (const n of G.ativas) {
+    if (n.pista !== pista) continue;
+    const d = Math.abs(n.y - Y_ACERTO);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  // A pista indica o dedo, mas o acerto exige a letra exata da nota.
+  if (!best || best.tecla !== k) teclaErrada();
+  else if (bestD <= JANELA_PERFEITO) acertar(best, 'perfeito');
+  else if (best && bestD <= JANELA_BOM) acertar(best, 'bom');
+  else teclaErrada();
+}
+
+/* ---------- HUD / keycaps / dica ---------- */
+const kcEls = [], kcTxt = new Array(8).fill('');
+function flashKeycap(p) {
+  const el = kcEls[p];
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 140);
+}
+function atualizarHUD() {
+  $('hud-pontos').textContent = G.pontos;
+  const hc = $('hud-combo');
+  hc.textContent = G.combo + ' ×' + mult();
+  hc.classList.toggle('chama', G.combo >= 20);
+  $('hud-prec').textContent = (G.processadas === 0 && G.teclasErradas === 0 ? 100 : precisao()).toFixed(0) + '%';
+  const ef = $('energia-fill');
+  ef.style.width = Math.max(0, G.energia) + '%';
+  ef.className = G.energia > 50 ? 'e-verde' : G.energia > 25 ? 'e-amarela' : 'e-vermelha';
+  $('prog-fill').style.width = Math.min(100, G.processadas / Math.max(1, G.totalNotas) * 100) + '%';
+}
+function atualizarKeycaps() {
+  for (let p = 0; p < 8; p++) {
+    let best = null, bestD = Infinity;
+    for (const n of G.ativas) {
+      if (n.pista !== p) continue;
+      const d = Math.abs(n.y - Y_ACERTO);
+      if (d < bestD) { bestD = d; best = n; }
+    }
+    let txt = LANES[p].teclas[0].toUpperCase();
+    if (best) txt = best.tecla.toUpperCase();
+    if (kcTxt[p] !== txt) { kcTxt[p] = txt; kcEls[p].textContent = txt; }
+  }
+}
+// Dica: tecla do teclado virtual pulsa na cor da pista da nota mais próxima
+let hintAtual = null;
+function atualizarHint() {
+  let best = null, bestD = Infinity;
+  for (const n of G.ativas) {
+    if (n.y > Y_ACERTO + JANELA_BOM) continue;
+    const d = Math.abs(n.y - Y_ACERTO);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  const k = best ? best.tecla : null;
+  if (k === hintAtual) return;
+  if (hintAtual && tkEls[hintAtual]) tkEls[hintAtual].classList.remove('pulsa');
+  hintAtual = k;
+  if (k && tkEls[k]) tkEls[k].classList.add('pulsa');
+}
+
+/* ---------- Loop principal (rAF + delta-time) ---------- */
+let ultimoTs = 0;
+function quadro(ts) {
+  requestAnimationFrame(quadro);
+  const dt = Math.min(0.05, Math.max(0, (ts - ultimoTs) / 1000 || 0));
+  ultimoTs = ts;
+  desenharEstrelas(dt);
+  if (G.estado === 'game') atualizarJogo();
+  atualizarParticulas(dt);
+}
+function atualizarJogo() {
+  const t = agora();
+  spawnDoChart(t);
+  for (let i = G.ativas.length - 1; i >= 0; i--) {
+    const n = G.ativas[i];
+    n.y = Y_ACERTO - (n.tHit - t) * n.vel; // movimento linear 2D
+    if (n.y > Y_ACERTO + LIMITE_ERRO) { errar(n); continue; }
+    posicionar(n);
+  }
+  atualizarKeycaps();
+  atualizarHint();
+  if (G.chartIdx >= G.chart.length && G.ativas.length === 0 && G.estado === 'game')
+    fimDeNivel();
+}
+
+/* ==================== CONSTRUÇÃO ESTÁTICA ==================== */
+function construirFundo() {
+  const fundo = $('pistas-fundo');
+  for (let p = 0; p < 8; p++) {
+    const g = document.createElement('div');
+    g.className = 'glow-pista';
+    g.style.left = (p * LARG_PISTA) + 'px';
+    g.style.width = LARG_PISTA + 'px';
+    g.style.background = 'linear-gradient(to top,' + LANES[p].cor + ',transparent 45%)';
+    fundo.appendChild(g);
+    if (p > 0) {
+      const s = document.createElement('div');
+      s.className = 'sep';
+      s.style.left = (p * LARG_PISTA) + 'px';
+      fundo.appendChild(s);
+    }
+  }
+}
+function construirKeycaps() {
+  const box = $('keycaps');
+  for (let p = 0; p < 8; p++) {
+    const el = document.createElement('div');
+    el.className = 'kc';
+    el.style.setProperty('--c', LANES[p].cor);
+    el.textContent = LANES[p].teclas[0].toUpperCase();
+    el.title = LANES[p].dedo;
+    box.appendChild(el);
+    kcEls.push(el);
+  }
+}
+const tkEls = {};
+function construirTeclado() {
+  const fileiras = [
+    ['q','w','e','r','t','y','u','i','o','p'],
+    ['a','s','d','f','g','h','j','k','l','ç'],
+    ['z','x','c','v','b','n','m',',','.',';']
+  ];
+  fileiras.forEach((fk, i) => {
+    const row = $('fk' + i);
+    fk.forEach(k => {
+      const el = document.createElement('div');
+      el.className = 'tk';
+      el.textContent = k.toUpperCase();
+      el.style.setProperty('--c', LANES[TECLA_PISTA[k]].cor);
+      el.addEventListener('pointerdown', ev => {
+        ev.preventDefault(); audioInit();
+        if (G.estado === 'game') { teclaJogo(k); feedbackTecla(k); }
+      });
+      row.appendChild(el);
+      tkEls[k] = el;
+    });
+  });
+}
+function construirLegenda() {
+  const leg = $('legenda'), legComo = $('leg-como');
+  LANES.forEach((l, i) => {
+    const s = document.createElement('span');
+    s.style.setProperty('--c', l.cor);
+    s.textContent = l.dedo;
+    leg.appendChild(s);
+    if (legComo) legComo.appendChild(s.cloneNode(true));
+  });
+}
+function feedbackTecla(k) {
+  const el = tkEls[k];
+  if (!el) return;
+  el.classList.add('ativa');
+  setTimeout(() => el.classList.remove('ativa'), 120);
+}
+
+/* ---------- Responsivo: escala o palco ---------- */
+let escalaPalco = 1;
+function ajustar() {
+  const estilos = getComputedStyle(document.documentElement);
+  const respiro = parseFloat(estilos.getPropertyValue('--respiro-tela')) || 24;
+  const larguraDisponivel = Math.max(1, innerWidth - respiro * 2);
+  const alturaDisponivel = Math.max(1, innerHeight - respiro * 2);
+  escalaPalco = Math.min(
+    larguraDisponivel / palco.offsetWidth,
+    alturaDisponivel / palco.offsetHeight
+  );
+  palco.style.setProperty('--escala', escalaPalco);
+  palco.style.transform = 'translate(-50%,-50%) scale(' + escalaPalco + ')';
+}
+
+/* ==================== INPUT ==================== */
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  audioInit(); // primeiro gesto: cria/retoma o AudioContext
+  // Atalhos globais
+  if (k === 'escape') { tratarEsc(); e.preventDefault(); return; }
+  if (k === 'm' && G.estado !== 'game') { setMudo(!mudo); sfxUI(); return; }
+  // Gameplay
+  if (G.estado === 'game') {
+    if (Object.prototype.hasOwnProperty.call(TECLA_PISTA, k)) {
+      teclaJogo(k); feedbackTecla(k); e.preventDefault();
+    }
+    return;
+  }
+  // Navegação de menus por teclado
+  if (G.estado === 'menu') {
+    const cartoes = document.querySelectorAll('.cartao-nivel');
+    if (k === 'arrowdown' || k === 'arrowup') {
+      const liberadas = FASES.map((_, faseIdx) => faseIdx)
+        .filter(faseIdx => indiceNivel(menuEtapa, faseIdx) + 1 <= save.desbloqueado);
+      const atual = Math.max(0, liberadas.indexOf(menuSel));
+      menuSel = liberadas[(atual + (k === 'arrowdown' ? 1 : -1) + liberadas.length) % liberadas.length];
+      cartoes.forEach((c, i) => c.classList.toggle('sel', i === menuSel));
+      sfxUI(); e.preventDefault();
+    } else if (k === 'arrowright' || k === 'arrowleft') {
+      const liberadas = ETAPAS.map((_, i) => i).filter(etapaDesbloqueada);
+      const atual = liberadas.indexOf(menuEtapa);
+      menuEtapa = liberadas[(atual + (k === 'arrowright' ? 1 : -1) + liberadas.length) % liberadas.length];
+      menuSel = 0; renderMenu(); sfxUI(); e.preventDefault();
+    } else if (k === 'enter' || k === ' ') {
+      e.preventDefault();
+      const nivel = indiceNivel(menuEtapa, menuSel);
+      if (nivel + 1 > save.desbloqueado) { sfxErrada(); return; }
+      sfxUI(); iniciarNivel(nivel);
+    }
+  } else if (G.estado === 'pause') {
+    if (k === 'arrowdown' || k === 'arrowup') {
+      pausaSel = (pausaSel + (k === 'arrowdown' ? 1 : -1) + 3) % 3;
+      destacarPausa(); sfxUI(); e.preventDefault();
+    } else if (k === 'enter' || k === ' ') {
+      e.preventDefault();
+      if (pausaSel === 0) retomar();
+      else if (pausaSel === 1) { iniciarNivel(G.nivelIdx); }
+      else voltarMenu();
+    }
+  } else if (G.estado === 'complete') {
+    if (k === 'enter' || k === ' ') {
+      e.preventDefault();
+      if ($('btn-proximo').style.display !== 'none') iniciarNivel(G.nivelIdx + 1);
+      else if (save.cursoConcluido && G.nivelIdx === TOTAL_FASES - 1) voltarMenu();
+      else iniciarNivel(G.nivelIdx);
+    }
+  } else if (G.estado === 'gameover') {
+    if (k === 'enter' || k === ' ') { e.preventDefault(); iniciarNivel(G.nivelIdx); }
+  } else if (G.estado === 'como') {
+    if (k === 'enter' || k === ' ') { e.preventDefault(); voltarMenu(); }
+  }
+});
+function tratarEsc() {
+  if (G.estado === 'game') pausar();
+  else if (G.estado === 'pause') retomar();
+  else if (G.estado === 'contagem') { clearTimeout(timerContagem); voltarMenu(); }
+  else if (G.estado === 'como' || G.estado === 'complete' || G.estado === 'gameover') voltarMenu();
+}
+// Primeiro gesto também por toque/clique
+window.addEventListener('pointerdown', () => audioInit(), {passive: true});
+// Toque/clique na pista: toca a nota mais próxima daquela pista
+$('rodovia').addEventListener('pointerdown', ev => {
+  if (G.estado !== 'game') return;
+  audioInit();
+  const r = $('rodovia').getBoundingClientRect();
+  const pista = Math.max(0, Math.min(7, Math.floor((ev.clientX - r.left) / (r.width / 8))));
+  let best = null, bestD = Infinity;
+  for (const n of G.ativas) {
+    if (n.pista !== pista) continue;
+    const d = Math.abs(n.y - Y_ACERTO);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  if (best) { teclaJogo(best.tecla); feedbackTecla(best.tecla); }
+  else teclaErrada();
+});
+// Botões de UI
+$('btn-como').addEventListener('click', () => { audioInit(); sfxUI(); G.estado = 'como'; mostrarTela('como'); });
+$('btn-voltar-como').addEventListener('click', () => { sfxUI(); voltarMenu(); });
+$('btn-som-menu').addEventListener('click', () => { audioInit(); setMudo(!mudo); sfxUI(); });
+$('btn-pausa').addEventListener('click', () => { if (G.estado === 'game') pausar(); });
+$('btn-mute').addEventListener('click', () => { setMudo(!mudo); });
+$('btn-continuar').addEventListener('click', retomar);
+$('btn-reiniciar').addEventListener('click', () => iniciarNivel(G.nivelIdx));
+$('btn-menu-pausa').addEventListener('click', voltarMenu);
+$('btn-proximo').addEventListener('click', () => iniciarNivel(G.nivelIdx + 1));
+$('btn-repetir').addEventListener('click', () => iniciarNivel(G.nivelIdx));
+$('btn-menu-completo').addEventListener('click', voltarMenu);
+$('btn-tentar').addEventListener('click', () => iniciarNivel(G.nivelIdx));
+$('btn-menu-gameover').addEventListener('click', voltarMenu);
+window.addEventListener('resize', () => { ajustar(); initEstrelas(); });
+
+/* ==================== AUTO-TESTE (?test=1) ==================== */
+window.__errors = [];
+if (TESTE) {
+  window.onerror = (msg, src, lin, col) => { window.__errors.push(String(msg) + ' @' + lin + ':' + col); };
+  window.addEventListener('unhandledrejection', e => window.__errors.push('rejeicao: ' + String(e.reason)));
+}
+function iniciarTeste() {
+  const cobertura = {teclaExata:false, ghSeparadas:false, distribuicao:false, etapas:false, progresso:false};
+  setTimeout(() => {
+    iniciarNivel(0); // inicia etapa 1, fase 1 automaticamente (sem áudio)
+    function validarTeclaExata(alvo, erradas) {
+      const pontosAntes = G.pontos;
+      criarNota({t: agora(), p: TECLA_PISTA[alvo], tecla: alvo});
+      const nota = G.ativas[G.ativas.length - 1];
+      nota.y = Y_ACERTO;
+      let rejeitou = true;
+      erradas.forEach(k => {
+        teclaJogo(k);
+        rejeitou = rejeitou && G.ativas.includes(nota) && G.pontos === pontosAntes;
+      });
+      teclaJogo(alvo);
+      return rejeitou && !G.ativas.includes(nota) && G.pontos > pontosAntes;
+    }
+    cobertura.teclaExata = validarTeclaExata('a', ['q', 'z']);
+    cobertura.ghSeparadas = validarTeclaExata('g', ['f']) && validarTeclaExata('h', ['j']);
+    cobertura.distribuicao = FASES[0].teclas.includes('g') && FASES[1].teclas.includes('h') &&
+      NIVEIS.every((cfg, nivelIdx) => {
+        const presentes = new Set(gerarChart(nivelIdx).map(n => n.tecla));
+        return cfg.teclas.split('').every(k => presentes.has(k));
+      });
+    cobertura.etapas = ETAPAS.length === 3 && ETAPAS.every((_, etapaIdx) => {
+      const configs = NIVEIS.slice(indiceNivel(etapaIdx, 0), indiceNivel(etapaIdx, 0) + FASES_POR_ETAPA);
+      return configs.every(c => c.vel === configs[0].vel && c.bpm === configs[0].bpm && c.total === configs[0].total);
+    });
+    cobertura.progresso = indiceNivel(0, FASES_POR_ETAPA - 1) + 1 === indiceNivel(1, 0) &&
+      indiceNivel(1, FASES_POR_ETAPA - 1) + 1 === indiceNivel(2, 0) &&
+      NIVEIS[indiceNivel(0, FASES_POR_ETAPA - 1)].vel < NIVEIS[indiceNivel(1, 0)].vel &&
+      NIVEIS[indiceNivel(1, FASES_POR_ETAPA - 1)].vel < NIVEIS[indiceNivel(2, 0)].vel;
+    atualizarHUD();
+  }, 400);
+  // Simulador de teclas: acerta ~85% das notas na hora certa; o resto vira ERROU
+  const sim = setInterval(() => {
+    if (G.estado !== 'game') return;
+    for (const n of G.ativas) {
+      if (n.autoT) continue;
+      if (Math.abs(n.y - Y_ACERTO) <= 30) {
+        n.autoT = true;
+        if (Math.random() < 0.85)
+          window.dispatchEvent(new KeyboardEvent('keydown', {key: n.tecla}));
+      }
+    }
+  }, 40);
+  // Algumas teclas erradas de propósito (caminho "tecla errada")
+  let erradas = 0;
+  const simErrada = setInterval(() => {
+    if (G.estado === 'game' && erradas < 3) {
+      erradas++;
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'q'}));
+    }
+  }, 5000);
+  setTimeout(() => {
+    clearInterval(sim); clearInterval(simErrada);
+    const acertos = G.perf + G.bons;
+    const pass = window.__errors.length === 0 && G.pontos > 0 && acertos > 0 && G.processadas > 0 &&
+      cobertura.teclaExata && cobertura.ghSeparadas && cobertura.distribuicao && cobertura.etapas && cobertura.progresso;
+    window.__testResult = {
+      pass, errosJS: window.__errors.length, processadas: G.processadas,
+      acertos, erros: G.erros, teclasErradas: G.teclasErradas,
+      pontos: G.pontos, energia: G.energia, estado: G.estado,
+      teclaExata: cobertura.teclaExata, ghSeparadas: cobertura.ghSeparadas,
+      distribuicao: cobertura.distribuicao, etapas: cobertura.etapas, progresso: cobertura.progresso
+    };
+    const linhas = [
+      'RESULTADO: ' + (pass ? 'PASS' : 'FAIL'),
+      '',
+      'erros JS capturados..: ' + window.__errors.length,
+      'notas processadas....: ' + G.processadas,
+      'acertos..............: ' + acertos + ' (perfeitos ' + G.perf + ' / bons ' + G.bons + ')',
+      'erros (ERROU)........: ' + G.erros,
+      'teclas erradas.......: ' + G.teclasErradas,
+      'pontuacao............: ' + G.pontos,
+      'energia..............: ' + Math.round(G.energia),
+      'estado de telas......: ' + G.estado,
+      'A rejeita Q/Z........: ' + (cobertura.teclaExata ? 'OK' : 'FALHOU'),
+      'G/H separados........: ' + (cobertura.ghSeparadas ? 'OK' : 'FALHOU'),
+      'G/H nas fases 1 e 2..: ' + (cobertura.distribuicao ? 'OK' : 'FALHOU'),
+      'velocidade por etapa.: ' + (cobertura.etapas ? 'OK' : 'FALHOU'),
+      'transicao de etapas..: ' + (cobertura.progresso ? 'OK' : 'FALHOU')
+    ];
+    if (window.__errors.length) linhas.push('', window.__errors[0]);
+    const el = $('teste-texto');
+    el.textContent = linhas.join('\n');
+    el.className = pass ? 'pass' : 'fail';
+    mostrarOverlay('tela-teste');
+  }, 20000);
+}
+
+/* ==================== INIT ==================== */
+construirFundo();
+construirKeycaps();
+construirTeclado();
+construirLegenda();
+atualizarBotoesMudo();
+renderMenu();
+initEstrelas();
+ajustar();
+requestAnimationFrame(quadro);
+if (TESTE) iniciarTeste();
+</script>
+</body>
+</html>
