@@ -242,13 +242,18 @@ const CENTRO_X = 332;             // centro horizontal da rodovia
 const JANELA_PERFEITO = 55, JANELA_BOM = 110, LIMITE_ERRO = 130;
 
 const NIVEIS = [
+  {nome:'Mão Esquerda',         bpm:75,  vel:210, total:28, durAlvo:55, desc:'Iniciante: só as teclas A S D F G'},
+  {nome:'Mão Direita',          bpm:80,  vel:220, total:32, durAlvo:58, desc:'Iniciante: só as teclas Ç L K J H'},
   {nome:'Base do Ritmo',        bpm:90,  vel:250, total:45, durAlvo:62, desc:'Só a fileira central: A S D F J K L Ç'},
   {nome:'Subindo a Escala',     bpm:100, vel:290, total:55, durAlvo:66, desc:'Central + fileira superior (Q W E R T Y U I O P)'},
   {nome:'Explorando o Teclado', bpm:110, vel:330, total:65, durAlvo:70, desc:'Alfabeto completo: as 3 fileiras'},
   {nome:'Palavras de Estrelas', bpm:100, vel:150, palavras:18, desc:'Digite palavras inteiras antes da linha'},
   {nome:'Modo Lenda',           bpm:120, vel:330, infinito:true, desc:'Sem fim: velocidade e densidade aumentam'}
 ];
+const NIVEL_PALAVRAS = 5, NIVEL_LENDA = 6;
 const TECLAS_NIVEL = [
+  'asdfg',
+  'çlkjh',
   'asdfjklç',
   'asdfjklçqwertyuiop',
   'asdfjklçqwertyuiopzxcvbnm,.;'
@@ -268,12 +273,24 @@ const PALAVRAS = ['amor','casa','vida','tempo','mundo','festa','verde','azul','b
 const CADEADO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 1 1 6 0v3H9z"/></svg>';
 
 /* ==================== PERSISTÊNCIA ==================== */
-const SAVE_KEY = 'typehero_save_v1';
+const SAVE_KEY = 'typehero_save_v2';
 let save = {desbloqueado:1, melhores:{}, lenda:0};
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY));
   if (s && typeof s === 'object') save = Object.assign(save, s);
 } catch (e) { /* armazenamento indisponível */ }
+try { // migra progresso do save antigo (5 níveis) para a nova numeração (7 níveis)
+  const antigo = JSON.parse(localStorage.getItem('typehero_save_v1'));
+  if (antigo && typeof antigo === 'object' && !localStorage.getItem(SAVE_KEY)) {
+    const m = {};
+    Object.keys(antigo.melhores || {}).forEach(k => { m[+k + 2] = antigo.melhores[k]; });
+    save = {
+      desbloqueado: antigo.desbloqueado > 1 ? Math.min(NIVEIS.length, antigo.desbloqueado + 2) : 1,
+      melhores: m, lenda: antigo.lenda || 0
+    };
+    salvar();
+  }
+} catch (e) {}
 function salvar() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
 
 let mudo = false;
@@ -364,7 +381,7 @@ setInterval(agendarBeat, 30);
 // alternância esquerda/direita e intervalo mínimo por pista.
 function gerarChart(nv) {
   const cfg = NIVEIS[nv];
-  const permitidas = new Set(TECLAS_NIVEL[Math.min(nv, 2)].split(''));
+  const permitidas = new Set(TECLAS_NIVEL[Math.min(nv, TECLAS_NIVEL.length - 1)].split(''));
   const passo = 60 / cfg.bpm / 2; // colcheia em segundos
   const media = (cfg.durAlvo - 3) / cfg.total;
   const u = Math.max(2, Math.round(media / passo)); // unidades de colcheia entre notas
@@ -401,7 +418,7 @@ function gerarChartPalavras() {
   }
   const notas = [];
   let t = 2.5, prev = -1;
-  for (const w of embaralhado.slice(0, NIVEIS[3].palavras)) {
+  for (const w of embaralhado.slice(0, NIVEIS[NIVEL_PALAVRAS].palavras)) {
     let p; do { p = (Math.random() * 8) | 0; } while (p === prev);
     prev = p;
     notas.push({t, p, palavra: w});
@@ -422,7 +439,7 @@ const G = {
 function agora() { return (performance.now() - G.inicioStamp) / 1000; }
 function mult() { return G.combo >= 30 ? 4 : G.combo >= 20 ? 3 : G.combo >= 10 ? 2 : 1; }
 function precisao() {
-  const total = G.nivelIdx === 4 ? Math.max(1, G.processadas) : Math.max(1, G.totalNotas);
+  const total = G.nivelIdx === NIVEL_LENDA ? Math.max(1, G.processadas) : Math.max(1, G.totalNotas);
   return (G.perf + G.bons * 0.5) / total * 100;
 }
 
@@ -451,7 +468,7 @@ function renderMenu() {
     b.className = 'cartao-nivel' + (bloq ? ' bloqueado' : '') + (i === menuSel ? ' sel' : '');
     let melhorTxt;
     if (bloq) melhorTxt = CADEADO_SVG;
-    else if (i === 4 && save.lenda > 0) melhorTxt = 'Recorde: ' + save.lenda;
+    else if (i === NIVEL_LENDA && save.lenda > 0) melhorTxt = 'Recorde: ' + save.lenda;
     else if (melhor) melhorTxt = melhor.pts + ' pts · ' + melhor.acc.toFixed(0) + '%';
     else melhorTxt = '—';
     b.innerHTML = '<span class="num">' + (i + 1) + '</span>' +
@@ -481,8 +498,8 @@ function iniciarNivel(i) {
   G.ultLenda = new Array(8).fill(-99); G.ladoLenda = 0; G.proxLenda = 2.5;
   $('notas').innerHTML = ''; $('popups').innerHTML = '';
   poolNotas.length = 0;
-  if (i === 3) { G.chart = gerarChartPalavras(); G.totalNotas = G.chart.length; }
-  else if (i === 4) { G.chart = []; G.totalNotas = Infinity; }
+  if (i === NIVEL_PALAVRAS) { G.chart = gerarChartPalavras(); G.totalNotas = G.chart.length; }
+  else if (i === NIVEL_LENDA) { G.chart = []; G.totalNotas = Infinity; }
   else { G.chart = gerarChart(i); G.totalNotas = G.chart.length; }
   mostrarTela('jogo');
   $('hud-nivel-nome').textContent = 'Nível ' + (i + 1) + ' — ' + G.cfg.nome;
@@ -543,7 +560,7 @@ function fimDeNivel() {
   const notaFinal = acc >= 95 ? 'S' : acc >= 85 ? 'A' : acc >= 70 ? 'B' : 'C';
   const passou = acc >= 70 && G.energia > 0;
   const nv = G.nivelIdx + 1;
-  if (passou && nv + 1 > save.desbloqueado && nv < 5) save.desbloqueado = nv + 1;
+  if (passou && nv + 1 > save.desbloqueado && nv < NIVEIS.length) save.desbloqueado = nv + 1;
   const ant = save.melhores[nv];
   if (passou && (!ant || G.pontos > ant.pts)) save.melhores[nv] = {pts: G.pontos, acc};
   salvar();
@@ -555,7 +572,7 @@ function fimDeNivel() {
     'Precisão: <b>' + acc.toFixed(1) + '%</b><br>' +
     'Combo máximo: <b>' + G.comboMax + '</b>' +
     (passou ? '' : '<br><span style="color:#f87171">Precisão mínima de 70% para desbloquear</span>');
-  $('btn-proximo').style.display = (passou && G.nivelIdx < 4) ? 'block' : 'none';
+  $('btn-proximo').style.display = (passou && G.nivelIdx < NIVEIS.length - 1) ? 'block' : 'none';
   mostrarOverlay('tela-completo');
 }
 function gameOver() {
@@ -564,7 +581,7 @@ function gameOver() {
   sfxErro(); sfxGameOver();
   const acc = precisao();
   let recorde = false;
-  if (G.nivelIdx === 4 && G.pontos > save.lenda) {
+  if (G.nivelIdx === NIVEL_LENDA && G.pontos > save.lenda) {
     save.lenda = G.pontos; salvar(); recorde = true;
   }
   $('recorde-lenda').style.display = recorde ? 'block' : 'none';
@@ -694,7 +711,7 @@ function spawnLenda(t) {
   for (;;) {
     const vel = 330 + Math.min(190, G.proxLenda * 2.2); // 330 -> 520 px/s
     if (G.proxLenda - t > tempoViagem(vel)) break;
-    const permitidas = new Set(TECLAS_NIVEL[2].split(''));
+    const permitidas = new Set(TECLAS_NIVEL[TECLAS_NIVEL.length - 1].split(''));
     const minGap = 75 / vel;
     const pistas = [];
     for (let i = 0; i < 8; i++)
@@ -771,7 +788,7 @@ function teclaErrada() { // tecla de jogo sem nota por perto: não quebra combo
 }
 function teclaJogo(k) {
   if (G.estado !== 'game') return;
-  if (G.nivelIdx === 3) { teclaPalavra(k); return; }
+  if (G.nivelIdx === NIVEL_PALAVRAS) { teclaPalavra(k); return; }
   const pista = TECLA_PISTA[k];
   if (pista === undefined) return;
   let best = null, bestD = Infinity;
@@ -834,7 +851,7 @@ function atualizarHUD() {
   const ef = $('energia-fill');
   ef.style.width = Math.max(0, G.energia) + '%';
   ef.className = G.energia > 50 ? 'e-verde' : G.energia > 25 ? 'e-amarela' : 'e-vermelha';
-  if (G.nivelIdx === 4) $('prog-fill').style.width = '100%';
+  if (G.nivelIdx === NIVEL_LENDA) $('prog-fill').style.width = '100%';
   else $('prog-fill').style.width = Math.min(100, G.processadas / Math.max(1, G.totalNotas) * 100) + '%';
 }
 function atualizarKeycaps() {
@@ -878,7 +895,7 @@ function quadro(ts) {
 }
 function atualizarJogo() {
   const t = agora();
-  if (G.nivelIdx === 4) spawnLenda(t); else spawnDoChart(t);
+  if (G.nivelIdx === NIVEL_LENDA) spawnLenda(t); else spawnDoChart(t);
   for (let i = G.ativas.length - 1; i >= 0; i--) {
     const n = G.ativas[i];
     n.y = Y_ACERTO - (n.tHit - t) * n.vel; // movimento linear 2D
@@ -887,7 +904,7 @@ function atualizarJogo() {
   }
   atualizarKeycaps();
   atualizarHint();
-  if (G.nivelIdx < 4 && G.chartIdx >= G.chart.length && G.ativas.length === 0 && G.estado === 'game')
+  if (G.nivelIdx < NIVEL_LENDA && G.chartIdx >= G.chart.length && G.ativas.length === 0 && G.estado === 'game')
     fimDeNivel();
 }
 
